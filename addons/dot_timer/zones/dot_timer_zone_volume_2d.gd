@@ -10,7 +10,7 @@ extends Node2D
 		kind = value
 		queue_redraw()
 
-@export_range(0, 8, 1) var track: int = DotTimerTrack.MAIN
+@export_range(0, 8, 1, "or_greater") var track: int = DotTimerTrack.MAIN
 
 ## Size of the rectangle, in the host's own 2D units, centred on this node.
 @export var size: Vector2 = Vector2(128.0, 128.0):

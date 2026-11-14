@@ -212,7 +212,9 @@ static func from_dictionary(data: Dictionary) -> DotTimerRecord:
 	var record := DotTimerRecord.new()
 
 	record.map_id = StringName(str(data.get("map", "")))
-	record.track = clampi(int(data.get("track", 0)), 0, DotTimerTrack.BONUS_LAST)
+	record.track = int(data.get("track", 0))
+	if not DotTimerTrack.is_valid(record.track):
+		push_error("DotTimerRecord: track %d is not a track (0 or more)" % record.track)
 	record.style_id = StringName(str(data.get("style", "normal")))
 	record.player_id = StringName(str(data.get("player", "")))
 	record.player_name = str(data.get("name", ""))

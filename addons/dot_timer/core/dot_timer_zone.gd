@@ -70,7 +70,7 @@ const POINT_KINDS: Array[Kind] = [Kind.SPAWN]
 @export var kind: Kind = Kind.START
 
 ## Which track this zone belongs to. See [DotTimerTrack].
-@export_range(0, 8, 1) var track: int = DotTimerTrack.MAIN
+@export_range(0, 8, 1, "or_greater") var track: int = DotTimerTrack.MAIN
 
 @export var shape: Shape = Shape.BOX
 
@@ -210,7 +210,7 @@ func validate() -> DotResult:
 	if not DotTimerTrack.is_valid(track):
 		return DotResult.fail(
 			DotError.CODE_INVALID,
-			"A zone's track must be 0..%d." % DotTimerTrack.BONUS_LAST,
+			"A zone's track must be 0 or more.",
 			"track %d" % track
 		)
 
@@ -285,7 +285,7 @@ static func from_dictionary(data: Dictionary) -> DotTimerZone:
 
 	zone.id = int(data.get("id", 0))
 	zone.kind = _to_kind(data.get("kind", Kind.START))
-	zone.track = clampi(int(data.get("track", 0)), 0, DotTimerTrack.BONUS_LAST)
+	zone.track = int(data.get("track", 0))
 	zone.shape = _to_shape(data.get("shape", Shape.BOX))
 	zone.from = _vector(data.get("from"))
 	zone.to = _vector(data.get("to"))

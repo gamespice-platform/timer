@@ -12,7 +12,7 @@ extends Node3D
 		update_gizmos()
 		notify_property_list_changed()
 
-@export_range(0, 8, 1) var track: int = DotTimerTrack.MAIN
+@export_range(0, 8, 1, "or_greater") var track: int = DotTimerTrack.MAIN
 
 ## Size of the box, in metres, centred on this node.
 ## A size, so the node moves and rotates like any other; the exported zone is axis-aligned (see [method to_zone]).

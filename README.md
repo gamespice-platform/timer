@@ -47,7 +47,7 @@ manager.tick_player(
 | Feature | Detail |
 | --- | --- |
 | Zones | Start, end, stage, checkpoint, teleport, respawn, slay, stop, speed limit, gravity, air acceleration, push, no-jump, auto-hop, freestyle, slide, and your own. Drawn in the editor or in game with two console commands. |
-| Tracks | A main route and bonuses, each with its own zones, records and leaderboard. |
+| Tracks | A main route and bonuses, each with its own zones, records and leaderboard. Bonuses are usually numbered 1..8; any number is accepted. |
 | Styles | Sideways, half-sideways, backwards, low gravity, prebhop. Ranking weight and minimum time live here; the movement lives in dot-player-controller. |
 | Replays | Quantised and delta-encoded, played back by time so they run right on any monitor. |
 | Records | In memory, JSON files, or SQLite, PostgreSQL and MySQL through [dot-sql](https://github.com/modcommunity/dot-sql). World record, top lists, ranks (ties share a place), completion counts, per-stage records. Reads are cached. |

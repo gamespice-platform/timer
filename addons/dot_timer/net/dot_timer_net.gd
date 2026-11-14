@@ -41,7 +41,7 @@ class RunState extends RefCounted:
 
 	func write(writer: Variant) -> void:
 		writer.write_uint(status, STATUS_BITS)
-		writer.write_uint(track, DotTimerTrack.BITS)
+		DotTimerTrack.write_wire(writer, track)
 		writer.write_uint(style_index, STYLE_BITS)
 		writer.write_uint(start_tick, TICK_BITS)
 		writer.write_float_range(start_offset, 0.0, 1.0, OFFSET_BITS)
@@ -49,7 +49,7 @@ class RunState extends RefCounted:
 
 	func read(reader: Variant) -> void:
 		status = reader.read_uint(STATUS_BITS)
-		track = reader.read_uint(DotTimerTrack.BITS)
+		track = DotTimerTrack.read_wire(reader)
 		style_index = reader.read_uint(STYLE_BITS)
 		start_tick = reader.read_uint(TICK_BITS)
 		start_offset = reader.read_float_range(0.0, 1.0, OFFSET_BITS)
@@ -81,7 +81,7 @@ class Finish extends RefCounted:
 		)
 
 	func write(writer: Variant) -> void:
-		writer.write_uint(track, DotTimerTrack.BITS)
+		DotTimerTrack.write_wire(writer, track)
 		writer.write_uint(style_index, STYLE_BITS)
 		writer.write_uint(ticks, TICK_BITS)
 		writer.write_float_range(start_offset, 0.0, 1.0, OFFSET_BITS)
@@ -91,7 +91,7 @@ class Finish extends RefCounted:
 		writer.write_uint(mini(rank, 4095), 12)
 
 	func read(reader: Variant) -> void:
-		track = reader.read_uint(DotTimerTrack.BITS)
+		track = DotTimerTrack.read_wire(reader)
 		style_index = reader.read_uint(STYLE_BITS)
 		ticks = reader.read_uint(TICK_BITS)
 		start_offset = reader.read_float_range(0.0, 1.0, OFFSET_BITS)

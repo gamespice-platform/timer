@@ -17,7 +17,7 @@ Three details in the painter are each a bug that would otherwise be found in pro
 - **Zone ids are never reused.** A deleted zone's id going to the next one drawn silently repoints every replay crossing mark and every "zone 12 is wrong" report.
 - **`mark_point` replaces rather than adds.** A track has one spawn; re-marking means "here instead".
 
-`DotTimerTrack` is 0 for the main route and 1..8 for bonuses. `DotTimerTrack.parse` returns -1 for an unknown track rather than falling back to the main one.
+`DotTimerTrack` is 0 for the main route and 1 and up for bonuses, with no upper limit (1..8 is only the community numbering, `BONUS_LAST`/`COUNT`; on the wire tracks 0..14 keep the 4-bit field and larger ones escape to a 31-bit one). `DotTimerTrack.parse` returns -1 for an unknown track rather than falling back to the main one.
 
 ## Checking a zone file
 

@@ -3,7 +3,7 @@ extends "selftest/replay_checks.gd"
 ## Proves the timer does what a leaderboard depends on; exits non-zero on any failure.
 ## Run: [code]godot --headless --path . res://examples/timer_selftest.tscn[/code]. The most important check is [method _test_tickrate_agreement]; the runs are synthetic, along a straight line.
 
-const CHECKS := 357
+const CHECKS := 362
 
 ## Sections entered against sections that ran to their last line, and against this. A runtime error aborts a section silently;
 ## a section that bailed out early is counted as not finished on purpose. The CHECKS total is the other half; see docs/testing.md.
@@ -121,10 +121,24 @@ func _test_track_names() -> void:
 	_check(DotTimerTrack.parse("b2") == 2, "\"b2\" is track 2")
 	_check(DotTimerTrack.parse("") == DotTimerTrack.MAIN, "an empty string is main")
 
-	# The refusal matters more than the parses: a console command that read "bonus 9"
+	# No cap on bonuses: a map may draw as many as it likes.
+	_check(DotTimerTrack.parse("bonus 9") == 9 and DotTimerTrack.parse("b40") == 40, "bonuses past 8 are tracks too")
+	_check(DotTimerTrack.of_bonus(40) == 40 and DotTimerTrack.is_bonus(40), "of_bonus and is_bonus take any bonus number")
+	# The refusal matters more than the parses: a console command that read "nonsense"
 	# as "main" would file a record on a track the player did not run.
-	_check(DotTimerTrack.parse("bonus 9") == -1, "an out-of-range bonus is refused")
+	_check(DotTimerTrack.parse("bonus -1") == -1, "a negative bonus is refused")
 	_check(DotTimerTrack.parse("nonsense") == -1, "and so is nonsense")
+	_check(not DotTimerTrack.is_valid(-1), "and a negative track is not a track")
+
+	var wire := _BitWire.new()
+	for t in [0, 8, 14, 15, 40, 100000]:
+		DotTimerTrack.write_wire(wire, t)
+	var back: Array = []
+	for i in range(6):
+		back.append(DotTimerTrack.read_wire(wire))
+	_check(back == [0, 8, 14, 15, 40, 100000], "any track crosses the wire (%s)" % [back])
+	_check(DotTimerTrack.wire_bits(8) == 4 and DotTimerTrack.wire_bits(40) == 4 + DotTimerTrack.WIDE_BITS,
+		"tracks 0..14 keep the old 4-bit field; larger ones escape to a wide one")
 
 	_check(DotTimerTrack.is_bonus(1), "track 1 is a bonus")
 	_check(not DotTimerTrack.is_bonus(0), "track 0 is not")
@@ -2189,7 +2203,7 @@ func _test_painter() -> void:
 	)
 
 	_check(
-		not painter.begin(DotTimerZone.Kind.START, 99).ok,
+		not painter.begin(DotTimerZone.Kind.START, -1).ok,
 		"an invalid track is refused"
 	)
 	_done()
@@ -2220,3 +2234,18 @@ func _test_time_formatting() -> void:
 	)
 	_done()
 
+
+## A stand-in for dot-net's bit writer and reader: [method DotTimerTrack.write_wire] only
+## calls write_uint / read_uint, and dot-net is not a dependency of this suite.
+class _BitWire extends RefCounted:
+	var _fields: Array = []
+	var _at := 0
+
+	func write_uint(value: int, bits: int) -> void:
+		assert(value >= 0 and value < (1 << bits))
+		_fields.append([value, bits])
+
+	func read_uint(bits: int) -> int:
+		var field: Array = _fields[_at]
+		_at += 1
+		return int(field[0]) if int(field[1]) == bits else -999

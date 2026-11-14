@@ -1,29 +1,41 @@
 class_name DotTimerTrack
 extends RefCounted
 
-## Which route through a map a run is on: 0 is the main track, 1..8 are bonuses (the community numbering).
+## Which route through a map a run is on: 0 is the main track, 1 and up are bonuses. There is no
+## upper limit: a map may have as many bonuses as it draws. 1..8 is only the community numbering.
 ## A namespace, not an object: a track is an [code]int[/code] everywhere, as a table column, wire field and array index.
 
 ## The main route. Every map has one.
 const MAIN := 0
 
-## The first bonus. Bonuses are [constant BONUS_FIRST] .. [constant BONUS_LAST].
+## The first bonus. Every track from here up is a bonus; there is no last one.
 const BONUS_FIRST := 1
+
+## The last bonus of the community numbering (1..8). Not a limit: tracks above it are valid,
+## stored, replicated and shown like any other. Kept for games that list the usual tracks.
 const BONUS_LAST := 8
 
-## One past the last valid track, so a loop reads [code]for t in range(COUNT)[/code].
+## One past [constant BONUS_LAST]: the usual tracks, so a menu can read
+## [code]for t in range(COUNT)[/code]. Not a limit; see [constant BONUS_LAST].
 const COUNT := BONUS_LAST + 1
 
-## Bits a track occupies on the wire. Four is exactly enough for 0..8.
+## Bits of the short wire field. Tracks 0..14 fit in it, exactly as before; [constant WIDE]
+## in it means a [constant WIDE_BITS]-bit track follows. See [method write_wire].
 const BITS := 4
+
+## The short field's escape value.
+const WIDE := (1 << BITS) - 1
+
+## Bits of the long form, for a track of [constant WIDE] or more.
+const WIDE_BITS := 31
 
 
 static func is_valid(track: int) -> bool:
-	return track >= MAIN and track < COUNT
+	return track >= MAIN and track < (1 << WIDE_BITS)
 
 
 static func is_bonus(track: int) -> bool:
-	return track >= BONUS_FIRST and track <= BONUS_LAST
+	return track >= BONUS_FIRST and is_valid(track)
 
 
 ## The bonus number a track is, or 0 for the main track.
@@ -31,9 +43,40 @@ static func bonus_number(track: int) -> int:
 	return track if is_bonus(track) else 0
 
 
-## A track id from a bonus number. [code]of_bonus(2)[/code] is bonus 2.
+## A track id from a bonus number. [code]of_bonus(2)[/code] is bonus 2. Any number from 1 up;
+## anything below 1 is an error and returns -1, never a clamped neighbour.
 static func of_bonus(number: int) -> int:
-	return clampi(number, BONUS_FIRST, BONUS_LAST)
+	if number < BONUS_FIRST or not is_valid(number):
+		push_error("DotTimerTrack.of_bonus: %d is not a bonus number (1 or more)" % number)
+		return -1
+	return number
+
+
+## Writes [param track] to a dot-net bit writer: [constant BITS] bits for 0..14 (the old field,
+## unchanged on the wire), else the escape and then [constant WIDE_BITS] bits.
+static func write_wire(writer: Variant, track: int) -> void:
+	if track >= MAIN and track < WIDE:
+		writer.write_uint(track, BITS)
+		return
+	if not is_valid(track):
+		push_error("DotTimerTrack.write_wire: track %d is not a track; sending main" % track)
+		writer.write_uint(MAIN, BITS)
+		return
+	writer.write_uint(WIDE, BITS)
+	writer.write_uint(track, WIDE_BITS)
+
+
+## Reads what [method write_wire] wrote.
+static func read_wire(reader: Variant) -> int:
+	var track: int = reader.read_uint(BITS)
+	if track == WIDE:
+		track = reader.read_uint(WIDE_BITS)
+	return track
+
+
+## Bits [method write_wire] spends on [param track].
+static func wire_bits(track: int) -> int:
+	return BITS if track >= MAIN and track < WIDE else BITS + WIDE_BITS
 
 
 static func name_of(track: int) -> String:

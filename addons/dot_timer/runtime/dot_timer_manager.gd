@@ -1029,7 +1029,7 @@ func _write_replay(found: Player, record: DotTimerRecord) -> void:
 func replay_path(record: DotTimerRecord) -> String:
 	var name := "%s_%d_%s_%s.drp" % [
 		DotTimerStoreFile.safe_component(String(record.map_id)),
-		clampi(record.track, 0, DotTimerTrack.BONUS_LAST),
+		record.track,
 		DotTimerStoreFile.safe_component(String(record.style_id)),
 		DotTimerStoreFile.safe_component(String(record.player_id)),
 	]

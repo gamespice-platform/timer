@@ -48,7 +48,7 @@ func path_for(
 	return "%s/%s.%d.%s%s.json" % [
 		directory.rstrip("/"),
 		safe_component(String(map_id)),
-		clampi(track, 0, DotTimerTrack.BONUS_LAST),
+		track,
 		safe_component(String(style_id)),
 		(".s%d" % stage) if stage > 0 else "",
 	]
