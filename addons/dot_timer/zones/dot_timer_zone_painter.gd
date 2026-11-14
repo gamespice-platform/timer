@@ -51,7 +51,7 @@ func begin(
 		return DotResult.fail(
 			DotError.CODE_INVALID,
 			"That is not a track.",
-			"%d, expected 0..%d" % [p_track, DotTimerTrack.BONUS_LAST]
+			"%d, expected 0 or more" % p_track
 		)
 
 	kind = p_kind

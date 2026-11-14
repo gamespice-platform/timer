@@ -79,12 +79,25 @@ func first_of_kind(kind: DotTimerZone.Kind, track: int) -> DotTimerZone:
 	return null
 
 
+## Every track some zone sits on, ascending. Any track number, however high; not a fixed range.
+func used_tracks() -> PackedInt32Array:
+	var seen := {}
+
+	for zone in zones:
+		if DotTimerTrack.is_valid(zone.track):
+			seen[zone.track] = true
+
+	var out := PackedInt32Array(seen.keys())
+	out.sort()
+	return out
+
+
 ## Tracks that have both a start and an end, in ascending order.
 ## A start with no finish is the commonest hand-drawn mistake: playable, the timer starts, and nobody can complete it.
 func playable_tracks() -> PackedInt32Array:
 	var out := PackedInt32Array()
 
-	for track in range(DotTimerTrack.COUNT):
+	for track in used_tracks():
 		if (
 			first_of_kind(DotTimerZone.Kind.START, track) != null
 			and first_of_kind(DotTimerZone.Kind.END, track) != null
@@ -135,7 +148,7 @@ func problems() -> PackedStringArray:
 			out.append("zone id %d is used more than once" % zone.id)
 		seen_ids[zone.id] = true
 
-	for track in range(DotTimerTrack.COUNT):
+	for track in used_tracks():
 		var starts := of_kind(DotTimerZone.Kind.START, track)
 		var ends := of_kind(DotTimerZone.Kind.END, track)
 
@@ -209,12 +222,8 @@ func route_tracks() -> PackedInt32Array:
 		] and DotTimerTrack.is_valid(zone.track):
 			seen[zone.track] = true
 
-	var out := PackedInt32Array()
-
-	for track in range(DotTimerTrack.COUNT):
-		if seen.has(track):
-			out.append(track)
-
+	var out := PackedInt32Array(seen.keys())
+	out.sort()
 	return out
 
 

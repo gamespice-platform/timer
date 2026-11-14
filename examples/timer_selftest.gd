@@ -3,7 +3,7 @@ extends "selftest/replay_checks.gd"
 ## Proves the timer does what a leaderboard depends on; exits non-zero on any failure.
 ## Run: [code]godot --headless --path . res://examples/timer_selftest.tscn[/code]. The most important check is [method _test_tickrate_agreement]; the runs are synthetic, along a straight line.
 
-const CHECKS := 362
+const CHECKS := 365
 
 ## Sections entered against sections that ran to their last line, and against this. A runtime error aborts a section silently;
 ## a section that bailed out early is counted as not finished on purpose. The CHECKS total is the other half; see docs/testing.md.
@@ -139,6 +139,23 @@ func _test_track_names() -> void:
 	_check(back == [0, 8, 14, 15, 40, 100000], "any track crosses the wire (%s)" % [back])
 	_check(DotTimerTrack.wire_bits(8) == 4 and DotTimerTrack.wire_bits(40) == 4 + DotTimerTrack.WIDE_BITS,
 		"tracks 0..14 keep the old 4-bit field; larger ones escape to a wide one")
+
+	var state := DotTimerNet.RunState.new()
+	state.track = 40
+	state.stage = 500
+	state.write(wire)
+	var fin := DotTimerNet.Finish.new()
+	fin.track = 3
+	fin.rank = 70000
+	fin.write(wire)
+	var state_back := DotTimerNet.RunState.new()
+	state_back.read(wire)
+	var fin_back := DotTimerNet.Finish.new()
+	fin_back.read(wire)
+	_check(state_back.stage == 500 and state_back.track == 40, "a stage past 62 crosses the wire")
+	_check(fin_back.rank == 70000 and fin_back.track == 3, "a rank past 4094 crosses the wire, not clamped to 4095")
+	_check(DotTimerNet.open_bits(5, 6) == 6 and DotTimerNet.open_bits(62, 6) == 6 and DotTimerNet.open_bits(63, 6) == 37,
+		"stages below 63 keep the old 6-bit field")
 
 	_check(DotTimerTrack.is_bonus(1), "track 1 is a bonus")
 	_check(not DotTimerTrack.is_bonus(0), "track 0 is not")
@@ -2249,3 +2266,11 @@ class _BitWire extends RefCounted:
 		var field: Array = _fields[_at]
 		_at += 1
 		return int(field[0]) if int(field[1]) == bits else -999
+
+	func write_float_range(value: float, _lo: float, _hi: float, bits: int) -> void:
+		_fields.append([value, bits])
+
+	func read_float_range(_lo: float, _hi: float, bits: int) -> float:
+		var field: Array = _fields[_at]
+		_at += 1
+		return float(field[0]) if int(field[1]) == bits else -999.0
