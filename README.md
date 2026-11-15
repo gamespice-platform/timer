@@ -5,9 +5,9 @@ Time is counted in ticks with sub-tick zone crossings, so a run set on a 64 Hz s
 ## Install
 
 1. Get [Godot 4.7](https://godotengine.org/download).
-2. Either use [dot-bootstrap](https://github.com/modcommunity/dot-bootstrap), which clones every project and links the addons, or copy `addons/dot_timer/` and [dot-core](https://github.com/modcommunity/dot-core)'s `addons/dot_core/` into your project and enable dot-timer in *Project > Project Settings > Plugins*.
+2. Either use [dot-bootstrap](https://github.com/gamespice-platform/bootstrap), which clones every project and links the addons, or copy `addons/dot_timer/` and [dot-core](https://github.com/gamespice-platform/core)'s `addons/dot_core/` into your project and enable dot-timer in *Project > Project Settings > Plugins*.
 
-Only dot-core is required. [dot-player-controller](https://github.com/modcommunity/dot-player-controller), dot-net and dot-server are optional.
+Only dot-core is required. [dot-player-controller](https://github.com/gamespice-platform/player-controller), dot-net and dot-server are optional.
 
 ## Use
 
@@ -48,7 +48,7 @@ manager.tick_player(
 | Tracks | A main route and bonuses, each with its own zones, records and leaderboard. Bonuses are usually numbered 1..8; any number is accepted. |
 | Styles | Sideways, half-sideways, backwards, low gravity, prebhop. Ranking weight and minimum time live here; the movement lives in dot-player-controller. |
 | Replays | Quantised and delta-encoded, played back by time so they run right on any monitor. |
-| Records | In memory, JSON files, or SQLite, PostgreSQL and MySQL through [dot-sql](https://github.com/modcommunity/dot-sql). World record, top lists, ranks (ties share a place), completion counts, per-stage records. Reads are cached. |
+| Records | In memory, JSON files, or SQLite, PostgreSQL and MySQL through [dot-sql](https://github.com/gamespice-platform/sql). World record, top lists, ranks (ties share a place), completion counts, per-stage records. Reads are cached. |
 | Rankings | Points per record from `curve`, `tiered` or `placement`, re-scored when a board's record changes, with rank titles you supply. |
 | Players | Profile, attempts and time per map, and a dropped run kept for `resume_seconds` (default 600) so a player who disconnects can take it back. |
 | Rules | Start speed caps, ground time before a start, every stage required, validator and checker zones, pause rules, runs stopped by no clip or unexplained teleports. |
@@ -93,6 +93,6 @@ More in [docs/](docs/README.md): the design reasoning, what each refusal in `can
 
 ## Status and licence
 
-Part of the TMC **dot-\*** family of Godot addons. Written with Claude Code and maintained by `gamemann`. Every addon has headless tests, but little of this has been played by real users yet, so expect rough edges and please [open an issue](https://github.com/modcommunity/dot-timer/issues) when you hit one.
+Part of the TMC **dot-\*** family of Godot addons. Written with Claude Code and maintained by `gamemann`. Every addon has headless tests, but little of this has been played by real users yet, so expect rough edges and please [open an issue](https://github.com/gamespice-platform/timer/issues) when you hit one.
 
 MIT licence, see [LICENSE](LICENSE). The only closed part of the TMC platform is the web back end; you can use your own instead of TMC's.
