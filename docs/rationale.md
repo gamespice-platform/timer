@@ -262,7 +262,7 @@ The hash suffix is what makes a collision impossible rather than unlikely. Subst
 ## addons/dot_timer/store/dot_timer_store_sql.gd
 
 **`DotTimerStoreSql`.** ```gdscript
-var made := DotSql.from_config({"driver": "sqlite", "path": "user://g2gfast.db"}, self)
+var made := DotSql.from_config({"driver": "sqlite", "path": "user://airdrift.db"}, self)
 var store := DotTimerStoreSql.new(made.value)
 var opened := await store.open()     # creates or migrates the tables
 manager.store = store

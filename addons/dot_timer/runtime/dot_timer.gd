@@ -293,7 +293,7 @@ func _request_effects() -> void:
 		return
 
 	# Iterated over a copy. The host acts synchronously inside the signal and calls
-	# back in — `Playground._on_effect_requested` teleports, which stops the run —
+	# back in — `Playlot._on_effect_requested` teleports, which stops the run —
 	# and a handler that reaches `set_zones` clears the array being walked.
 	var entered: Array = _entered.duplicate()
 
