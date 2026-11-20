@@ -1,3 +1,5 @@
+[![dot-timer - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/221-dot-timer)
+
 Speedrun timers for Godot 4: bunny-hop, surf, KZ and anything else run against the clock. Zones a mapper draws, tracks and bonuses, stages and splits, styles, replays, records and leaderboards.
 
 Time is counted in ticks with sub-tick zone crossings, so a run set on a 64 Hz server is comparable with one set on a 128 Hz server. That lets two servers share a records table. It works in 2D as well as 3D.
