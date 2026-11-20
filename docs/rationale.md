@@ -4,7 +4,7 @@ Long reasoning that sat above the code, kept here so the code carries one-line d
 
 ## addons/dot_timer/core/dot_timer_config.gd
 
-**`DotTimerConfig.tick_rate`.** 0 means "take it from the engine": dot-server writes `Engine.physics_ticks_per_second` from its `sv_tickrate` cvar, so the operator sets one number in `server.cfg`. A fixed value is for a client or a test with no server to ask. Getting it wrong does not fail loudly: a timer counting 128 ticks a second on a server stepping 64 produces times exactly twice what they should be, the runs finish, the records file, and the leaderboard is wrong by a factor of two against every other server. That is why `adopt_engine_tick_rate` exists and why a record carries the rate it was set at.
+**`DotTimerConfig.tick_rate`.** 0 means "take it from the engine": GameSpice Server writes `Engine.physics_ticks_per_second` from its `sv_tickrate` cvar, so the operator sets one number in `server.cfg`. A fixed value is for a client or a test with no server to ask. Getting it wrong does not fail loudly: a timer counting 128 ticks a second on a server stepping 64 produces times exactly twice what they should be, the runs finish, the records file, and the leaderboard is wrong by a factor of two against every other server. That is why `adopt_engine_tick_rate` exists and why a record carries the rate it was set at.
 
 **`DotTimerConfig.fastest_fall_speed`.** Zero by default because guessing low here is how the thin-zone warning goes quiet on a real bug. A map built for jumping is full of height bands entered on the way up at walking speed, and warning about every one trains everybody to ignore the warning; but a pit volume drawn as a thin horizontal plane has the same shape, and a player falling into it at genre speed passes straight through. That is the most common defect in an imported map.
 
@@ -213,7 +213,7 @@ manager.tick_player(&"p1", position, velocity, grounded, alive, yaw, pitch)
 }
 ```
 
-**`config`.** Changing the number under runs in progress reinterprets ticks already banked: a run half-simulated at 64 and half at 128 produces a time that is neither, and files it without an error anywhere. On a server, `adopt_engine_tick_rate` takes it from `Engine.physics_ticks_per_second`, which dot-server writes from its own `sv_tickrate` cvar: one number, in `server.cfg`, with everything else.
+**`config`.** Changing the number under runs in progress reinterprets ticks already banked: a run half-simulated at 64 and half at 128 produces a time that is neither, and files it without an error anywhere. On a server, `adopt_engine_tick_rate` takes it from `Engine.physics_ticks_per_second`, which GameSpice Server writes from its own `sv_tickrate` cvar: one number, in `server.cfg`, with everything else.
 
 **`replays_directory`.** Set from `DotTimerConfig.replays_directory`, which was read by nothing for a long time. The recorder's memory cap was the same bug one field over: a server recorded every run, held the winner in `last_replay`, and lost it at exit, so a records server could not show the world-record replay.
 
@@ -225,7 +225,7 @@ manager.tick_player(&"p1", position, velocity, grounded, alive, yaw, pitch)
 
 **`replay_path`.** One file per map/track/style/player rather than per run: the store keeps one record per that tuple, so a second file would be a replay of a run the store already replaced. Ids are sanitised through `DotTimerStoreFile.safe_component`, the same function the records filename goes through and deliberately not a second one: a player id and a map id both reach this from the wire, so `../` in either is a write outside the directory, and substitution is many-to-one, so without that function's hash suffix `surf_kitsune2` and `surf_kitsune3` would share one replay file. That exact bug cost this addon a leaderboard once; a second sanitiser is how it comes back.
 
-**`stage_count`.** The navigation half of a staged map, which is what the timer community's staged maps and Shavit's `sm_stages` / `sm_stagerestart` are. dot-timer carried stage zones, sub-tick splits and `stage_count` since it was written and nothing read any of it: `stage_count` occurred exactly once in the whole family, which is this tree's own mechanical detector for a value produced correctly and consumed by nothing. The timer still does not move anybody: `stage_requested` is emitted for the same reason `effect_requested` is, since what "put the player here" means differs between a first-person game, a 2D game and a replay being scrubbed.
+**`stage_count`.** The navigation half of a staged map, which is what the timer community's staged maps and Shavit's `sm_stages` / `sm_stagerestart` are. GameSpice Timer carried stage zones, sub-tick splits and `stage_count` since it was written and nothing read any of it: `stage_count` occurred exactly once in the whole family, which is this tree's own mechanical detector for a value produced correctly and consumed by nothing. The timer still does not move anybody: `stage_requested` is emitted for the same reason `effect_requested` is, since what "put the player here" means differs between a first-person game, a 2D game and a replay being scrubbed.
 
 **`request_stage`.** Practice checkpoints are the mechanism for "keep my time while I learn this" and carry their own `used_checkpoints` flag; a stage teleport is the other thing, and it is not a ranked attempt.
 
@@ -241,7 +241,7 @@ A store never decides whether a record is allowed; it writes what it is given. W
 
 A board is (map, track, style, stage). Stage 0 is the whole run; stage k is section k of a staged map. Every board query takes the stage last, defaulting to the whole run, so a caller that has never heard of sections is unchanged. Ranks are shared by ties: two identical times are both rank 3 and the next is rank 5; awarding the older one the better rank is a rule nobody agreed to, and the site ranks the same way.
 
-Shipped: `DotTimerStoreMemory` (tests, a scratch server, the reference implementation), `DotTimerStoreFile` (JSON files), `DotTimerStoreSql` (SQLite, Postgres or MySQL through a dot-sql driver).
+Shipped: `DotTimerStoreMemory` (tests, a scratch server, the reference implementation), `DotTimerStoreFile` (JSON files), `DotTimerStoreSql` (SQLite, Postgres or MySQL through a GameSpice SQL driver).
 
 **`put`.** The dictionary: `previous` (the player's best before, or null), `improved` (whether this run replaced it), `previous_record` (the board's #1 before, or null), `completions` (finishes on this board, this one included).
 

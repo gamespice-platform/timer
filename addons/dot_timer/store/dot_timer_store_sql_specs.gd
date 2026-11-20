@@ -1,9 +1,9 @@
 class_name DotTimerStoreSqlSpecs
 extends RefCounted
-## The dot-sql table specs of DotTimerStoreSql, split out so the store keeps to the size gate.
+## The GameSpice SQL table specs of DotTimerStoreSql, split out so the store keeps to the size gate.
 
 
-## The tables, as dot-sql specs. Every one is keyed so its hottest query is an index
+## The tables, as GameSpice SQL specs. Every one is keyed so its hottest query is an index
 ## range scan: a board by time, a player's records, the latest history.
 static func specs(prefix: String) -> Array:
 	var record_columns := [

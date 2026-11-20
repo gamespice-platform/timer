@@ -1,12 +1,12 @@
 class_name DotTimerStoreSql
 extends DotTimerStore
 
-## Records in SQLite, PostgreSQL or MySQL, through a duck-typed dot-sql driver (so dot-timer still parses without dot-sql).
+## Records in SQLite, PostgreSQL or MySQL, through a duck-typed GameSpice SQL driver (so GameSpice Timer still parses without GameSpice SQL).
 ## Several servers can share one database; reads are cached for [member cache_seconds], writes go straight through.
 
 const CHANNEL := "timer.store.sql"
 
-## Schema component, in dot-sql's migration table. A new step is appended to
+## Schema component, in GameSpice SQL's migration table. A new step is appended to
 ## [method migration_steps]; an existing one is never edited.
 const COMPONENT := "dot_timer"
 
@@ -49,7 +49,7 @@ func migration_steps() -> Array:
 
 
 ## Opens the driver and creates or migrates the tables.
-## A database written by a newer build is refused by dot-sql's migrator rather than read with changed columns.
+## A database written by a newer build is refused by GameSpice SQL's migrator rather than read with changed columns.
 func open() -> DotResult:
 	if driver == null:
 		return DotResult.fail(DotError.CODE_STATE, "No SQL driver.")

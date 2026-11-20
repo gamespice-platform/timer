@@ -1,6 +1,6 @@
 extends Node
 
-## The SQL store against a real database, through dot-sql's gateway: the shared contract (`timer_store_contract.gd`), then two servers on one board and the cache.
+## The SQL store against a real database, through GameSpice SQL's gateway: the shared contract (`timer_store_contract.gd`), then two servers on one board and the cache.
 ## Run by dot-sql's runner once per dialect: [code]../dot-sql/tools/test_live.sh . res://examples/timer_sql_live.tscn[/code].
 
 const Contract := preload("res://examples/timer_store_contract.gd")

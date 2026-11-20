@@ -81,7 +81,7 @@ signal resume_available(player_id: StringName, state: Dictionary)
 @export var authoritative: bool = false
 
 ## Simulation ticks per second. Must match the host's movement loop. Do not assign at runtime: call [method set_tick_rate].
-## On a server prefer [method adopt_engine_tick_rate], which takes the value dot-server writes from [code]sv_tickrate[/code].
+## On a server prefer [method adopt_engine_tick_rate], which takes the value GameSpice Server writes from [code]sv_tickrate[/code].
 @export_range(1, 1000, 1) var tick_rate: int = 128
 
 ## Optional layered configuration, applied on ready before anything else. See [DotTimerConfig].
@@ -343,7 +343,7 @@ func set_tick_rate(rate: int) -> bool:
 	return true
 
 
-## Takes the tick rate from the engine, which is what a dot-server sets. Call once after the server applied its own configuration, and again if it changes it.
+## Takes the tick rate from the engine, which is what a GameSpice Server sets. Call once after the server applied its own configuration, and again if it changes it.
 func adopt_engine_tick_rate() -> bool:
 	return set_tick_rate(Engine.physics_ticks_per_second)
 

@@ -7,9 +7,9 @@ Time is counted in ticks with sub-tick zone crossings, so a run set on a 64 Hz s
 ## Install
 
 1. Get [Godot 4.7](https://godotengine.org/download).
-2. Either use [dot-bootstrap](https://github.com/gamespice-platform/bootstrap), which clones every project and links the addons, or copy `addons/dot_timer/` and [dot-core](https://github.com/gamespice-platform/core)'s `addons/dot_core/` into your project and enable dot-timer in *Project > Project Settings > Plugins*.
+2. Either use [GameSpice Bootstrap](https://github.com/gamespice-platform/bootstrap), which clones every project and links the addons, or copy `addons/dot_timer/` and [GameSpice Core](https://github.com/gamespice-platform/core)'s `addons/dot_core/` into your project and enable dot-timer in *Project > Project Settings > Plugins*.
 
-Only dot-core is required. [dot-player-controller](https://github.com/gamespice-platform/player-controller), dot-net and dot-server are optional.
+Only GameSpice Core is required. [GameSpice Player Controller](https://github.com/gamespice-platform/player-controller), GameSpice Net and GameSpice Server are optional.
 
 ## Use
 
@@ -48,9 +48,9 @@ manager.tick_player(
 | --- | --- |
 | Zones | Start, end, stage, checkpoint, teleport, respawn, slay, stop, speed limit, gravity, air acceleration, push, no-jump, auto-hop, freestyle, slide, and your own. Drawn in the editor or in game with two console commands. |
 | Tracks | A main route and bonuses, each with its own zones, records and leaderboard. Bonuses are usually numbered 1..8; any number is accepted. |
-| Styles | Sideways, half-sideways, backwards, low gravity, prebhop. Ranking weight and minimum time live here; the movement lives in dot-player-controller. |
+| Styles | Sideways, half-sideways, backwards, low gravity, prebhop. Ranking weight and minimum time live here; the movement lives in GameSpice Player Controller. |
 | Replays | Quantised and delta-encoded, played back by time so they run right on any monitor. |
-| Records | In memory, JSON files, or SQLite, PostgreSQL and MySQL through [dot-sql](https://github.com/gamespice-platform/sql). World record, top lists, ranks (ties share a place), completion counts, per-stage records. Reads are cached. |
+| Records | In memory, JSON files, or SQLite, PostgreSQL and MySQL through [GameSpice SQL](https://github.com/gamespice-platform/sql). World record, top lists, ranks (ties share a place), completion counts, per-stage records. Reads are cached. |
 | Rankings | Points per record from `curve`, `tiered` or `placement`, re-scored when a board's record changes, with rank titles you supply. |
 | Players | Profile, attempts and time per map, and a dropped run kept for `resume_seconds` (default 600) so a player who disconnects can take it back. |
 | Rules | Start speed caps, ground time before a start, every stage required, validator and checker zones, pause rules, runs stopped by no clip or unexplained teleports. |
@@ -67,7 +67,7 @@ var opened := await store.open()      # creates or migrates the tables
 manager.store = store
 ```
 
-For PostgreSQL or MySQL, point dot-sql at its HTTP gateway. dot-sql is only needed if you use this store.
+For PostgreSQL or MySQL, point GameSpice SQL at its HTTP gateway. GameSpice SQL is only needed if you use this store.
 
 The manager answers what chat commands ask: `profile`, `top_players`, `recent_records`, `maps_done`, `maps_left`, `section_records`, `suggest_time_limit`, `would_rank`, and for admins `set_map_tier`, `rescore_map`, plus the store's `wipe_player`, `wipe_board` and `remove`.
 

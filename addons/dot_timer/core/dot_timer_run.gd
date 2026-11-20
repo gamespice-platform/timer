@@ -62,7 +62,7 @@ var skipped: bool = false
 var validated: Dictionary = {}
 
 ## Movement statistics, as a plain dictionary.
-## Not a typed stats class: dot-timer must compile without dot-player-controller. The host folds them in with [method note_stats].
+## Not a typed stats class: GameSpice Timer must compile without GameSpice Player Controller. The host folds them in with [method note_stats].
 var stats: Dictionary = {}
 
 ## Highest speed seen during the run, in m/s. The one statistic the timer measures

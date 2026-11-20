@@ -2,7 +2,7 @@ class_name DotTimerSample
 extends RefCounted
 
 ## One tick of a player, as the timer sees them: position, velocity, grounded. The host fills one in each tick and reuses it.
-## This class is why dot-timer depends on nothing but dot-core; the timer never names a controller type.
+## This class is why GameSpice Timer depends on nothing but GameSpice Core; the timer never names a controller type.
 
 ## Where the player is; for a first-person controller, their feet.
 ## Must be the same point every tick and the one the zones were drawn against, or every zone boundary shifts by the player's height.

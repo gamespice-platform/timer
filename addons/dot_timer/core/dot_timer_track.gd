@@ -52,7 +52,7 @@ static func of_bonus(number: int) -> int:
 	return number
 
 
-## Writes [param track] to a dot-net bit writer: [constant BITS] bits for 0..14 (the old field,
+## Writes [param track] to a GameSpice Net bit writer: [constant BITS] bits for 0..14 (the old field,
 ## unchanged on the wire), else the escape and then [constant WIDE_BITS] bits.
 static func write_wire(writer: Variant, track: int) -> void:
 	if track >= MAIN and track < WIDE:

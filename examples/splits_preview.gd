@@ -1,7 +1,7 @@
 extends Control
 
 ## The splits panel mid-run over a dark backdrop, for a screenshot: a 9-stage map, stage 4
-## being run and behind, gold on one section. `tools/screenshot.sh dot-timer out.png --scene
+## being run and behind, gold on one section. `tools/screenshot.sh GameSpice Timer out.png --scene
 ## res://examples/splits_preview.tscn` from game-dev.
 
 

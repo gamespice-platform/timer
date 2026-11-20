@@ -3,7 +3,7 @@ class_name DotTimerStyle
 extends Resource
 
 ## The records half of a style: is it ranked, what are its points worth, what is the shortest run that counts.
-## Paired with [code]DotFpsStyle[/code] (movement, in dot-player-controller) by [member id]; nothing enforces the pairing.
+## Paired with [code]DotFpsStyle[/code] (movement, in GameSpice Player Controller) by [member id]; nothing enforces the pairing.
 
 @export var id: StringName = &"normal"
 

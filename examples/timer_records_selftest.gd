@@ -1,6 +1,6 @@
 extends Node
 
-## The records half of dot-timer: the store contract against memory and file stores, points and titles, and every rule and flow the manager runs around a finish.
+## The records half of GameSpice Timer: the store contract against memory and file stores, points and titles, and every rule and flow the manager runs around a finish.
 ## Run: [code]godot --headless --path . res://examples/timer_records_selftest.tscn[/code]. The SQL store runs the same contract in `timer_sql_live`.
 
 const Contract := preload("res://examples/timer_store_contract.gd")

@@ -1,7 +1,7 @@
 extends Control
 
 ## The HUD with every line it can draw, for a screenshot: a practised run on a staged
-## map, behind the comparison, with a standing line. `tools/screenshot.sh dot-timer
+## map, behind the comparison, with a standing line. `tools/screenshot.sh GameSpice Timer
 ## out.png --scene res://examples/hud_preview.tscn` from game-dev.
 
 

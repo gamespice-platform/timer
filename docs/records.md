@@ -28,7 +28,7 @@
 
 ## The SQL store
 
-`DotTimerStoreSql` holds a **duck-typed** dot-sql driver (dot-sql's own docs say why no addon names a dot-sql class). Six tables under a configurable prefix: `records`, `history`, `players`, `maps`, `progress`, `resume`, versioned through dot-sql's migrator as `dot_timer:<prefix>`.
+`DotTimerStoreSql` holds a **duck-typed** GameSpice SQL driver (GameSpice SQL's own docs say why no addon names a GameSpice SQL class). Six tables under a configurable prefix: `records`, `history`, `players`, `maps`, `progress`, `resume`, versioned through GameSpice SQL's migrator as `dot_timer:<prefix>`.
 
 - **Two servers can share a board.** An improvement is `UPDATE ... WHERE time > ?`, so a slower run filed by a server whose read was stale can never overwrite a faster one. It then reads the row back and asks the board whether this run took first place, so it never announces an improvement another server already beat.
 - **Reads are cached, writes go straight through.** A board's top, its size and each player's best are cached for `cache_seconds` (10); this server's own writes update the cache as they land, so a record set here is on the HUD at once, and another server's is at most `cache_seconds` old. `peek_*` returns the cache and starts one background fetch per key, not one per frame.

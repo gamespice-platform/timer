@@ -2,7 +2,7 @@ class_name DotTimerNet
 extends RefCounted
 
 ## What a timer has to replicate, and how to move it between a [DotTimerRun] and a wire.
-## The writer and reader are typed [Variant] and called by name, so dot-net is not a dependency (a missing class_name fails the parse).
+## The writer and reader are typed [Variant] and called by name, so GameSpice Net is not a dependency (a missing class_name fails the parse).
 
 ## Status, as two bits. [enum DotTimerRun.Status] has four members and always will:
 ## a fifth would be a different concept, not another state of this one.

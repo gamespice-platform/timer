@@ -18,7 +18,7 @@ So: whole ticks, **minus** the fraction of the first tick already spent when the
 `DotTimerSample` is the whole answer. The timer needs a position, a velocity and whether the player is grounded; it does not need to know they came from a `DotFpsState`, a 2D body, a replay being scrubbed or a bot. Naming any of those would make the addon fail to parse in a project without them. Three things fall out of that:
 
 - **The same timer serves 2D and 3D**: one records table, one leaderboard, one replay format.
-- **A server that does not use dot-player-controller still gets timers.**
+- **A server that does not use GameSpice Player Controller still gets timers.**
 - **The movement half and the records half of a style are separate classes.** `DotFpsStyle` (dot-player-controller) transforms the tunables and filters the command; `DotTimerStyle` (here) says whether runs count, what they are worth and the shortest recordable run. Paired by id and enforced by nothing, because enforcing it would mean naming a class that may not exist.
 
 ## The tick rate
@@ -35,7 +35,7 @@ DotTimerManager.adopt_engine_tick_rate()
 DotTimerRecord.tick_rate        ← so a disputed time can be checked afterwards
 ```
 
-- **`sv_tickrate` belongs in `server.cfg`, not `autoexec.cfg`.** It is `FLAG_STARTUP_ONLY`, and dot-server execs `server.cfg` before the listener for exactly that reason while `autoexec.cfg` runs after and has it refused. `--sv-tickrate=128` and `+sv_tickrate 128` on the command line work too.
+- **`sv_tickrate` belongs in `server.cfg`, not `autoexec.cfg`.** It is `FLAG_STARTUP_ONLY`, and GameSpice Server execs `server.cfg` before the listener for exactly that reason while `autoexec.cfg` runs after and has it refused. `--sv-tickrate=128` and `+sv_tickrate 128` on the command line work too.
 - **`set_tick_rate` abandons runs in progress**, the only honest option: a run half-counted at 64 and half at 128 is neither, and files. Abandoning costs one attempt; the alternative costs the leaderboard its meaning.
 - **`tick_rate_matches_engine()` is checked at every map change and warns, but only on an authoritative timer.** A mirroring client counts at the rate the server told it (which is what makes a run comparable on a client rendering at 60), while its own `physics_ticks_per_second` is whatever its project exported; a browser build runs at 60. Warning there told every web client it would file wrong times, about a client that files none.
 
@@ -114,8 +114,8 @@ against zones authored with `DotTimerZoneVolume2D`. **The third axis is the trap
 
 ## Deliberately not here
 
-- **Chat, a menu or a `!wr` command.** Console commands belong to dot-server and chat to the game; this exposes the queries (`profile`, `top_players`, `recent_records`, `maps_done`, `maps_left`, `section_records`, `suggest_time_limit`, `would_rank`).
-- **A ranking across games.** Points and rank on this server are here, because every formula needs the board; what a game reports to the site is dot-leaderboard's, and so is sending records off the server.
+- **Chat, a menu or a `!wr` command.** Console commands belong to GameSpice Server and chat to the game; this exposes the queries (`profile`, `top_players`, `recent_records`, `maps_done`, `maps_left`, `section_records`, `suggest_time_limit`, `would_rank`).
+- **A ranking across games.** Points and rank on this server are here, because every formula needs the board; what a game reports to the site is GameSpice Leaderboard's, and so is sending records off the server.
 - **A ghost.** `DotTimerReplayPlayer` gives the pose; what to draw is the game's.
 - **Segmented styles' save-and-restore of a position.** The run flags are recorded; the position is the game's to save.
 - **Anti-cheat beyond the structural refusals.** Detecting a scripted strafe belongs where the input is.

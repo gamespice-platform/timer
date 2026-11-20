@@ -13,7 +13,7 @@ extends Resource
 const FORMAT_VERSION := 1
 
 ## The map these zones were drawn for.
-## An id, not a file path: a map may be delivered, mounted and versioned by dot-cloud, so its path is a deployment detail.
+## An id, not a file path: a map may be delivered, mounted and versioned by GameSpice Cloud, so its path is a deployment detail.
 @export var map_id: StringName = &""
 
 @export var zones: Array[DotTimerZone] = []

@@ -1869,8 +1869,8 @@ func _test_painter() -> void:
 	_done()
 
 
-## A stand-in for dot-net's bit writer and reader: [method DotTimerTrack.write_wire] only
-## calls write_uint / read_uint, and dot-net is not a dependency of this suite.
+## A stand-in for GameSpice Net's bit writer and reader: [method DotTimerTrack.write_wire] only
+## calls write_uint / read_uint, and GameSpice Net is not a dependency of this suite.
 class _BitWire extends RefCounted:
 	var _fields: Array = []
 	var _at := 0

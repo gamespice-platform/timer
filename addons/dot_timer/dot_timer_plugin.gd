@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-## Editor entry point for dot-timer. Registers inspector types only.
+## Editor entry point for GameSpice Timer. Registers inspector types only.
 ## No autoloads: a server runs a timer per player and a test harness thirty in one process.
 
 const _ICON := "res://addons/dot_timer/icon_placeholder.svg"

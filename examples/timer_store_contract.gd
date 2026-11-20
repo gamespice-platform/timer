@@ -1,6 +1,6 @@
 extends RefCounted
 
-## What every [DotTimerStore] must do, as one script run against all of them (memory, file, and SQL through dot-sql).
+## What every [DotTimerStore] must do, as one script run against all of them (memory, file, and SQL through GameSpice SQL).
 ## Usage: [code]await contract.run(store, _check)[/code] with [code]_check(what: String, passed: bool)[/code].
 
 ## How many checks [method run] makes, so a caller can count them in.

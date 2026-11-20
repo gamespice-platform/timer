@@ -1,10 +1,10 @@
-# dot-timer
+# GameSpice Timer
 
 Speedrun timers for Godot 4: bunny-hop, surf, climb courses, and anything else run against the clock. Zones, tracks and stages, styles, practice checkpoints, records in memory, a file or SQL, points and ranks, replays, and a HUD, for 2D and 3D alike.
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is specific to timing. The reasoning is in [docs/](docs/README.md).
 
-**Only dot-core is a dependency.** Not dot-player-controller, not dot-net, not dot-server, not dot-sql (its driver is held duck-typed). That is load-bearing: [timing.md](docs/timing.md#why-it-depends-on-nothing).
+**Only GameSpice Core is a dependency.** Not GameSpice Player Controller, not GameSpice Net, not GameSpice Server, not GameSpice SQL (its driver is held duck-typed). That is load-bearing: [timing.md](docs/timing.md#why-it-depends-on-nothing).
 
 ## Read before
 
@@ -28,7 +28,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `addons/dot_timer/zones/` | authoring: `DotTimerZoneVolume3D` / `2D`, `DotTimerZonePainter` (in-game, two marks a zone) |
 | `addons/dot_timer/store/` | `DotTimerStore` (abstract, every read awaited), memory, file, SQL |
 | `addons/dot_timer/replay/` | container (quantised, delta-encoded), recorder, player |
-| `addons/dot_timer/net/` | `DotTimerNet`: what replicates, without importing dot-net |
+| `addons/dot_timer/net/` | `DotTimerNet`: what replicates, without importing GameSpice Net |
 | `addons/dot_timer/ui/` | `DotTimerHud` and `DotTimerSplitsPanel` (stage-splits sidebar): no art |
 | `examples/` | `timer_selftest`, `timer_2d_selftest`, `timer_records_selftest`, `timer_sql_live`, `timer_store_contract.gd`, `hud_preview`, `splits_preview` (for a screenshot) |
 
@@ -95,14 +95,14 @@ Short forms; the reasoning is in the linked file.
 | Whether every stage must be passed | `DotTimerConfig.enforce_stages`, or the zone file's `meta.enforce_stages` |
 | A shortcut a map closes | `VALIDATOR` / `CHECKER` zones, paired by `number` |
 | What a style is worth | `DotTimerStyle`, and `points_for` to change the formula |
-| How the movement changes per style | `DotFpsStyle` in dot-player-controller |
+| How the movement changes per style | `DotFpsStyle` in GameSpice Player Controller |
 | A new kind of volume | `DotTimerZone.Kind.CUSTOM` plus `payload`, read on `effect_requested` |
 | What a teleport / respawn / slay does | `effect_requested`, always |
 | The map's difficulty tier | `DotTimerZoneSet.meta["tier"]`, or override `DotTimerManager.map_tier` |
 | How zones are authored | `DotTimerZoneVolume3D` / `2D`, or `DotTimerZonePainter` |
 | What the HUD looks like | `DotTimerHud` exports, or a subclass |
 | Speed units on the HUD | `DotTimerHud._stats_line` and the `u/s` conversion |
-| What replicates | `DotTimerNet.RunState` / `Finish`, written by a dot-net bridge |
+| What replicates | `DotTimerNet.RunState` / `Finish`, written by a GameSpice Net bridge |
 | Replay flags (ducked, jumped, teleported) | the `replay_flags` argument of `tick_player` |
 
-Deliberately not here: chat commands, menus, a cross-game ranking, sending records off the server (dot-leaderboard), drawing a ghost, the save-and-restore of a segmented run's position, and anti-cheat beyond the structural refusals. [timing](docs/timing.md#deliberately-not-here)
+Deliberately not here: chat commands, menus, a cross-game ranking, sending records off the server (GameSpice Leaderboard), drawing a ghost, the save-and-restore of a segmented run's position, and anti-cheat beyond the structural refusals. [timing](docs/timing.md#deliberately-not-here)
