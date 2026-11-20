@@ -1,4 +1,4 @@
-[![dot-timer - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/221-dot-timer)
+[![Timer - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/221-dot-timer)
 
 Speedrun timers for Godot 4: bunny-hop, surf, KZ and anything else run against the clock. Zones a mapper draws, tracks and bonuses, stages and splits, styles, replays, records and leaderboards.
 
