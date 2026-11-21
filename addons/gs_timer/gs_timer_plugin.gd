@@ -4,28 +4,28 @@ extends EditorPlugin
 ## Editor entry point for GameSpice Timer. Registers inspector types only.
 ## No autoloads: a server runs a timer per player and a test harness thirty in one process.
 
-const _ICON := "res://addons/dot_timer/icon_placeholder.svg"
+const _ICON := "res://addons/gs_timer/icon_placeholder.svg"
 
 const _TYPES := [
 	[
 		"GSTimerManager",
 		"Node",
-		"res://addons/dot_timer/runtime/dot_timer_manager.gd",
+		"res://addons/gs_timer/runtime/gs_timer_manager.gd",
 	],
 	[
 		"GSTimerZoneVolume3D",
 		"Node3D",
-		"res://addons/dot_timer/zones/dot_timer_zone_volume_3d.gd",
+		"res://addons/gs_timer/zones/gs_timer_zone_volume_3d.gd",
 	],
 	[
 		"GSTimerZoneVolume2D",
 		"Node2D",
-		"res://addons/dot_timer/zones/dot_timer_zone_volume_2d.gd",
+		"res://addons/gs_timer/zones/gs_timer_zone_volume_2d.gd",
 	],
 	[
 		"GSTimerHud",
 		"Control",
-		"res://addons/dot_timer/ui/dot_timer_hud.gd",
+		"res://addons/gs_timer/ui/gs_timer_hud.gd",
 	],
 ]
 

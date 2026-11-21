@@ -228,7 +228,7 @@ static func from_bytes(bytes: PackedByteArray) -> GSResult:
 
 	if reader.get_u32() != MAGIC:
 		return GSResult.fail(
-			GSError.CODE_PARSE, "That is not a dot-timer replay."
+			GSError.CODE_PARSE, "That is not a gs-timer replay."
 		)
 
 	var version := reader.get_u8()
@@ -236,7 +236,7 @@ static func from_bytes(bytes: PackedByteArray) -> GSResult:
 	if version > FORMAT_VERSION:
 		return GSResult.fail(
 			GSError.CODE_VERSION,
-			"That replay was written by a newer version of dot-timer.",
+			"That replay was written by a newer version of gs-timer.",
 			"format %d, this build reads %d" % [version, FORMAT_VERSION]
 		)
 

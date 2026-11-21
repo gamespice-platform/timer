@@ -1,7 +1,7 @@
 extends Node
 
 ## The SQL store against a real database, through GameSpice SQL's gateway: the shared contract (`timer_store_contract.gd`), then two servers on one board and the cache.
-## Run by dot-sql's runner once per dialect: [code]../dot-sql/tools/test_live.sh . res://examples/timer_sql_live.tscn[/code].
+## Run by gs-sql's runner once per dialect: [code]../gs-sql/tools/test_live.sh . res://examples/timer_sql_live.tscn[/code].
 
 const Contract := preload("res://examples/timer_store_contract.gd")
 
@@ -17,17 +17,17 @@ var _completed := 0
 func _ready() -> void:
 	GSLog.set_level(GSLog.Level.ERROR)
 
-	var dialect := GSSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("DOT_SQL_DIALECT")))
-	var token_file := (OS.get_environment("GS_SQL_TOKEN_FILE") if OS.has_environment("GS_SQL_TOKEN_FILE") else OS.get_environment("DOT_SQL_TOKEN_FILE"))
+	var dialect := GSSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("GS_SQL_DIALECT")))
+	var token_file := (OS.get_environment("GS_SQL_TOKEN_FILE") if OS.has_environment("GS_SQL_TOKEN_FILE") else OS.get_environment("GS_SQL_TOKEN_FILE"))
 	if dialect < 0 or token_file == "":
-		print("set GS_SQL_URL, GS_SQL_DIALECT and GS_SQL_TOKEN_FILE; see dot-sql/tools/test_live.sh")
+		print("set GS_SQL_URL, GS_SQL_DIALECT and GS_SQL_TOKEN_FILE; see gs-sql/tools/test_live.sh")
 		get_tree().quit(2)
 		return
-	print("dot-timer live: %s" % GSSqlDialect.name_of(dialect))
+	print("gs-timer live: %s" % GSSqlDialect.name_of(dialect))
 
-	var a := await _store("dot_tlive_")
+	var a := await _store("gs_tlive_")
 	await _drop(a)
-	a = await _store("dot_tlive_")
+	a = await _store("gs_tlive_")
 	if a == null:
 		get_tree().quit(1)
 		return
@@ -59,7 +59,7 @@ func _ready() -> void:
 
 
 func _stale_server_section(a: GSTimerStoreSql) -> void:
-	var b := await _store("dot_tlive_")
+	var b := await _store("gs_tlive_")
 	await a.put(Contract.rec(&"zed", 40.0))
 	await b.best_for(Contract.M, 0, &"normal", &"zed")   # b caches zed at 40
 	await a.put(Contract.rec(&"zed", 30.0))               # a improves to 30
@@ -71,7 +71,7 @@ func _stale_server_section(a: GSTimerStoreSql) -> void:
 
 
 func _cache_section() -> void:
-	var c := await _store("dot_tlive_")
+	var c := await _store("gs_tlive_")
 	c.cache_seconds = 30.0
 	await c.top(Contract.M, 0, &"normal", 10)
 	var before := c.queries
@@ -102,9 +102,9 @@ func _manager_section() -> GSTimerManager:
 	manager.record_replays = false
 	# Its own tables: the contract's players are still in the first set, and a ranking
 	# question asked of those tables would be answered against them.
-	var fresh := await _store("dot_tlivem_")
+	var fresh := await _store("gs_tlivem_")
 	await _drop(fresh)
-	manager.store = await _store("dot_tlivem_")
+	manager.store = await _store("gs_tlivem_")
 	add_child(manager)
 	var styles := GSTimerStyle.defaults()
 	styles[0].minimum_time = 0.0
@@ -135,12 +135,12 @@ func _manager_section() -> GSTimerManager:
 
 
 func _store(prefix: String) -> GSTimerStoreSql:
-	var dialect := GSSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("DOT_SQL_DIALECT")))
+	var dialect := GSSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("GS_SQL_DIALECT")))
 	var made := GSSql.from_config({
 		"driver": "gateway",
-		"url": (OS.get_environment("GS_SQL_URL") if OS.has_environment("GS_SQL_URL") else OS.get_environment("DOT_SQL_URL")),
+		"url": (OS.get_environment("GS_SQL_URL") if OS.has_environment("GS_SQL_URL") else OS.get_environment("GS_SQL_URL")),
 		"dialect": GSSqlDialect.name_of(dialect),
-		"token": FileAccess.get_file_as_string((OS.get_environment("GS_SQL_TOKEN_FILE") if OS.has_environment("GS_SQL_TOKEN_FILE") else OS.get_environment("DOT_SQL_TOKEN_FILE"))).strip_edges(),
+		"token": FileAccess.get_file_as_string((OS.get_environment("GS_SQL_TOKEN_FILE") if OS.has_environment("GS_SQL_TOKEN_FILE") else OS.get_environment("GS_SQL_TOKEN_FILE"))).strip_edges(),
 	}, self)
 	var store := GSTimerStoreSql.new(made.value)
 	store.prefix = prefix
@@ -156,7 +156,7 @@ func _drop(store: GSTimerStoreSql) -> void:
 		return
 	for name in ["records", "history", "players", "maps", "progress", "resume"]:
 		await store.driver.execute("DROP TABLE IF EXISTS %s" % store.table(name))
-	await store.driver.execute("DELETE FROM dot_sql_migrations WHERE component = ?", ["dot_timer:%s" % store.prefix])
+	await store.driver.execute("DELETE FROM gs_sql_migrations WHERE component = ?", ["gs_timer:%s" % store.prefix])
 
 
 func _check(what: String, passed: bool) -> void:

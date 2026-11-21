@@ -23,21 +23,21 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 
 | Path | What |
 | --- | --- |
-| `addons/dot_timer/core/` | data and pure functions: config, track, zone, zone set, style (the records half), run, record, sample, rules, points, rank titles |
-| `addons/dot_timer/runtime/` | `GSTimer` (one player), `GSTimerManager` (the node a game adds), zone index, practice checkpoints |
-| `addons/dot_timer/zones/` | authoring: `GSTimerZoneVolume3D` / `2D`, `GSTimerZonePainter` (in-game, two marks a zone) |
-| `addons/dot_timer/store/` | `GSTimerStore` (abstract, every read awaited), memory, file, SQL |
-| `addons/dot_timer/replay/` | container (quantised, delta-encoded), recorder, player |
-| `addons/dot_timer/net/` | `GSTimerNet`: what replicates, without importing GameSpice Net |
-| `addons/dot_timer/ui/` | `GSTimerHud` and `GSTimerSplitsPanel` (stage-splits sidebar): no art |
+| `addons/gs_timer/core/` | data and pure functions: config, track, zone, zone set, style (the records half), run, record, sample, rules, points, rank titles |
+| `addons/gs_timer/runtime/` | `GSTimer` (one player), `GSTimerManager` (the node a game adds), zone index, practice checkpoints |
+| `addons/gs_timer/zones/` | authoring: `GSTimerZoneVolume3D` / `2D`, `GSTimerZonePainter` (in-game, two marks a zone) |
+| `addons/gs_timer/store/` | `GSTimerStore` (abstract, every read awaited), memory, file, SQL |
+| `addons/gs_timer/replay/` | container (quantised, delta-encoded), recorder, player |
+| `addons/gs_timer/net/` | `GSTimerNet`: what replicates, without importing GameSpice Net |
+| `addons/gs_timer/ui/` | `GSTimerHud` and `GSTimerSplitsPanel` (stage-splits sidebar): no art |
 | `examples/` | `timer_selftest`, `timer_2d_selftest`, `timer_records_selftest`, `timer_sql_live`, `timer_store_contract.gd`, `hud_preview`, `splits_preview` (for a screenshot) |
 
 ## Running and testing
 
-- The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything)), then `timer_selftest.tscn`, `timer_2d_selftest.tscn` and `timer_records_selftest.tscn`; `../dot-sql/tools/test_live.sh . res://examples/timer_sql_live.tscn` against the three databases for anything in the SQL store. [testing](docs/testing.md)
+- The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything)), then `timer_selftest.tscn`, `timer_2d_selftest.tscn` and `timer_records_selftest.tscn`; `../gs-sql/tools/test_live.sh . res://examples/timer_sql_live.tscn` against the three databases for anything in the SQL store. [testing](docs/testing.md)
 - The 2D suite is not a formality: it found a bug in the shared code on its first run.
 - A change here is not done until game-airdrift's and game-playlot's suites agree; three of the bugs here were found from a game.
-- The HUD is checked by a picture: `tools/screenshot.sh dot-timer out.png --scene res://examples/hud_preview.tscn` from game-dev.
+- The HUD is checked by a picture: `tools/screenshot.sh gs-timer out.png --scene res://examples/hud_preview.tscn` from game-dev.
 
 ## Rules that bite
 

@@ -2,10 +2,10 @@
 .godot/
 /android/
 
-# dot-core is a separate repository. For local development, symlink it:
-#   ln -s ../../dot-core/addons/dot_core addons/dot_core
+# gs-core is a separate repository. For local development, symlink it:
+#   ln -s ../../gs-core/addons/gs_core addons/gs_core
 # Consumers copy both addons into their own project.
-/addons/dot_core
+/addons/gs_core
 
 # Exports
 build/
@@ -18,6 +18,6 @@ Thumbs.db
 # Editors
 .vscode/
 
-# dot-sql: the SQL store's suites drive it with dot-sql's drivers. The addon itself
+# gs-sql: the SQL store's suites drive it with gs-sql's drivers. The addon itself
 # reaches a driver duck-typed and does not need it.
-/addons/dot_sql
+/addons/gs_sql

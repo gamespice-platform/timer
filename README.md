@@ -7,7 +7,7 @@ Time is counted in ticks with sub-tick zone crossings, so a run set on a 64 Hz s
 ## Install
 
 1. Get [Godot 4.7](https://godotengine.org/download).
-2. Either use [GameSpice Bootstrap](https://github.com/gamespice-platform/bootstrap), which clones every project and links the addons, or copy `addons/dot_timer/` and [GameSpice Core](https://github.com/gamespice-platform/core)'s `addons/dot_core/` into your project and enable dot-timer in *Project > Project Settings > Plugins*.
+2. Either use [GameSpice Bootstrap](https://github.com/gamespice-platform/bootstrap), which clones every project and links the addons, or copy `addons/gs_timer/` and [GameSpice Core](https://github.com/gamespice-platform/core)'s `addons/gs_core/` into your project and enable gs-timer in *Project > Project Settings > Plugins*.
 
 Only GameSpice Core is required. [GameSpice Player Controller](https://github.com/gamespice-platform/player-controller), GameSpice Net and GameSpice Server are optional.
 
@@ -89,7 +89,7 @@ Height is added above the marked corners for you. For 2D, pass `Vector3(x, y, 0)
 
 ## Testing
 
-Import the project once, then run `timer_selftest.tscn`, `timer_2d_selftest.tscn` and `timer_records_selftest.tscn` in `examples/` headless with Godot. `../dot-sql/tools/test_live.sh . res://examples/timer_sql_live.tscn` runs the SQL store against real databases.
+Import the project once, then run `timer_selftest.tscn`, `timer_2d_selftest.tscn` and `timer_records_selftest.tscn` in `examples/` headless with Godot. `../gs-sql/tools/test_live.sh . res://examples/timer_sql_live.tscn` runs the SQL store against real databases.
 
 More in [docs/](docs/README.md): the design reasoning, what each refusal in `can_record` defends against, and [history](docs/history.md).
 

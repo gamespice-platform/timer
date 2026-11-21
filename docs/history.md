@@ -16,10 +16,10 @@ Bugs worth recognising if they come back. None produced an error anywhere. The r
 - **An empty records directory wrote side files into the working directory** (a stray `_maps.json` in a game's project root). The file store now refuses.
 - **A style that allowed checkpoints could never file a run**: `can_record` refused any run with the flag, and the old suite asserted the refusal.
 - **Points never moved when a record did**: computed once at filing against the record of the moment.
-- **A review pass found five more**: a restored run filed on whatever style the player had switched to; a removed player's total still counting removed records; the SQL store announcing an improvement another server had already beaten; floats losing digits on the gateway so a fresh best ranked behind itself; the SQLite driver reporting `true` instead of an affected-row count (the last two were dot-sql's).
+- **A review pass found five more**: a restored run filed on whatever style the player had switched to; a removed player's total still counting removed records; the SQL store announcing an improvement another server had already beaten; floats losing digits on the gateway so a fresh best ranked behind itself; the SQLite driver reporting `true` instead of an affected-row count (the last two were gs-sql's).
 - **An incomplete bonus route** (`[track-zone-1]`): five suites walked tracks by hand, one named track at a time, and the one map none of them asked about (game-airdrift's `bhop_g2g_stages`) had a bonus with no respawn. `route_problems()` asks every route.
 - **The engine-rate warning told every web client** at every map change that its times would be wrong, about a client that files none.
 - **`stage_count` occurred exactly once in the family**: the stage model existed and nothing showed, compared or practised a stage. That is the family's detector for a value produced correctly and consumed by nothing ([detectors.md](../../../docs/detectors.md)).
-- **A replay smeared a 30 m teleport over one tick** before format 2's teleport flag (`[dot-timer-replays-1]`).
+- **A replay smeared a 30 m teleport over one tick** before format 2's teleport flag (`[gs-timer-replays-1]`).
 - **A re-entered start zone was nothing**: the run kept counting until the player left again, and a style refusing an air start never saw them leave when they jumped out.
 - **The HUD drew a scattered column of grey text** down a quarter of the screen, then four dark dots at its plate's corners.

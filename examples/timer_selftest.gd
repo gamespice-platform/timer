@@ -16,7 +16,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("dot-timer self-test")
+	print("gs-timer self-test")
 	print("")
 
 	_test_track_names()
@@ -1550,7 +1550,7 @@ func _test_tick_rate_configuration() -> void:
 	)
 	_check(
 		config.effective_tick_rate(64) == 64,
-		"and takes the engine's rate when there is one — which on a dot-server is sv_tickrate"
+		"and takes the engine's rate when there is one — which on a gs-server is sv_tickrate"
 	)
 
 	config.tick_rate = 100

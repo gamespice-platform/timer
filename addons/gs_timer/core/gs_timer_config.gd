@@ -2,7 +2,7 @@
 class_name GSTimerConfig
 extends GSConfig
 
-## Every number a timer server is configured with, layered like every [GSConfig]: defaults, JSON file, [code]DOT_TIMER_*[/code] environment, [code]--timer-*[/code] arguments.
+## Every number a timer server is configured with, layered like every [GSConfig]: defaults, JSON file, [code]GS_TIMER_*[/code] environment, [code]--timer-*[/code] arguments.
 ## A dedicated server has to be reconfigured without an editor or a rebuild; the tick rate is the field that can silently invalidate a records table.
 
 @export_group("Simulation")
@@ -107,7 +107,7 @@ extends GSConfig
 
 
 func env_prefix() -> String:
-	return "DOT_TIMER_"
+	return "GS_TIMER_"
 
 
 func cli_prefix() -> String:

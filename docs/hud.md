@@ -7,7 +7,7 @@
 - **The plate is one `StyleBoxFlat`, drawn once.** A rect plus four corner circles blended twice where translucent shapes overlapped, and the plate had four dark dots. Any decomposition into overlapping pieces has that bug.
 - **`block_size()` is measured the same way `_draw` measures it**, and the suite asserts a size, because the family has shipped 0 x 0 `Control`s with every property correct.
 
-An interface is the part whose bugs no assertion reaches: look at it with `tools/screenshot.sh dot-timer out.png --scene res://examples/hud_preview.tscn` (from game-dev), which draws every line it can.
+An interface is the part whose bugs no assertion reaches: look at it with `tools/screenshot.sh gs-timer out.png --scene res://examples/hud_preview.tscn` (from game-dev), which draws every line it can.
 
 Speed units are `_stats_line` and its `u/s` conversion; override that for a game that measures in its own units.
 
@@ -26,5 +26,5 @@ panel.show_run(run)                                                             
 - Footer lines (`show_comparison`, `show_sum_of_best`, `show_possible_save`, `show_segment`) are each hideable. Sum of best is unknown (a dash) if any section has no best, because a sum with a hole is a time nobody could set; possible save is the comparison total minus it. Missing data is always a dash, never `0:00.000`.
 - Compact: `panel_width` 220 px, `font_size` 12, both multiplied by the theme's base scale; translucent plate; left edge, vertically centred in its rect (give it a full-rect Control, as with the HUD); `mouse_filter` ignore. More than `max_rows` sections show a window that follows the current stage with the Finish row pinned. No stage lines hides it entirely.
 - Footer toggles take effect at the next change of the run or `set_reference`.
-- Look at it: `tools/screenshot.sh dot-timer out.png --scene res://examples/splits_preview.tscn`.
+- Look at it: `tools/screenshot.sh gs-timer out.png --scene res://examples/splits_preview.tscn`.
 - **Online clients**: per-section records live in the server's store and are not replicated by `GSTimerNet`, so a client has no `best_sections` (and no `comparison_splits`) unless the game sends them. Without them the panel still works, with dashes.

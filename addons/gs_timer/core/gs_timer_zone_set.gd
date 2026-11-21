@@ -366,7 +366,7 @@ static func from_dictionary(data: Dictionary) -> GSResult:
 	if format > FORMAT_VERSION:
 		return GSResult.fail(
 			GSError.CODE_VERSION,
-			"These zones were written by a newer version of dot-timer.",
+			"These zones were written by a newer version of gs-timer.",
 			"format %d, this build reads %d" % [format, FORMAT_VERSION]
 		)
 

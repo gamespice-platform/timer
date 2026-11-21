@@ -34,7 +34,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("dot-timer 2D self-test")
+	print("gs-timer 2D self-test")
 	print("")
 
 	_test_zones_are_authored_in_2d()

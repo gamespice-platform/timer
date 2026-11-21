@@ -19,7 +19,7 @@ So: whole ticks, **minus** the fraction of the first tick already spent when the
 
 - **The same timer serves 2D and 3D**: one records table, one leaderboard, one replay format.
 - **A server that does not use GameSpice Player Controller still gets timers.**
-- **The movement half and the records half of a style are separate classes.** `GSFpsStyle` (dot-player-controller) transforms the tunables and filters the command; `GSTimerStyle` (here) says whether runs count, what they are worth and the shortest recordable run. Paired by id and enforced by nothing, because enforcing it would mean naming a class that may not exist.
+- **The movement half and the records half of a style are separate classes.** `GSFpsStyle` (gs-player-controller) transforms the tunables and filters the command; `GSTimerStyle` (here) says whether runs count, what they are worth and the shortest recordable run. Paired by id and enforced by nothing, because enforcing it would mean naming a class that may not exist.
 
 ## The tick rate
 
@@ -27,7 +27,7 @@ The rate is configuration, and it is the one that can ruin a records table. A ti
 
 ```
 server.cfg:  sv_tickrate 128
-      ↓      dot-server, _apply_tickrate()
+      ↓      gs-server, _apply_tickrate()
 Engine.physics_ticks_per_second
       ↓      GSTimerConfig.tick_rate == 0 means "ask the engine"
 GSTimerManager.adopt_engine_tick_rate()

@@ -20,7 +20,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("dot-timer records self-test")
+	print("gs-timer records self-test")
 	print("")
 
 	await _test_contract_memory()

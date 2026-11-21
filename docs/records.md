@@ -8,7 +8,7 @@
 - **A store never decides whether a record is allowed.** It writes what it is given. `GSTimer.can_record` runs on the authoritative timer where the run happened; a check inside the store would be repeated in every implementation and missing from somebody's.
 - **`put()` returns a dictionary** (`previous`, `improved`, `previous_record`, `completions`). Every finish is counted on the row, kept or not, because the store is the only thing that sees every finish.
 - **Ranks are shared by ties** (1, 2, 2, 4) in every store, and the site ranks the same way.
-- **`player_id` is not a site user id.** The family's identity layer hands a server a per-scope pseudonymous id precisely so operators cannot correlate players across servers; a records table storing a global id would undo that. The backbone maps it to an account when reporting (dot-leaderboard).
+- **`player_id` is not a site user id.** The family's identity layer hands a server a per-scope pseudonymous id precisely so operators cannot correlate players across servers; a records table storing a global id would undo that. The backbone maps it to an account when reporting (gs-leaderboard).
 
 ## One contract, three stores
 
@@ -28,7 +28,7 @@
 
 ## The SQL store
 
-`GSTimerStoreSql` holds a **duck-typed** GameSpice SQL driver (GameSpice SQL's own docs say why no addon names a GameSpice SQL class). Six tables under a configurable prefix: `records`, `history`, `players`, `maps`, `progress`, `resume`, versioned through GameSpice SQL's migrator as `dot_timer:<prefix>`.
+`GSTimerStoreSql` holds a **duck-typed** GameSpice SQL driver (GameSpice SQL's own docs say why no addon names a GameSpice SQL class). Six tables under a configurable prefix: `records`, `history`, `players`, `maps`, `progress`, `resume`, versioned through GameSpice SQL's migrator as `gs_timer:<prefix>`.
 
 - **Two servers can share a board.** An improvement is `UPDATE ... WHERE time > ?`, so a slower run filed by a server whose read was stale can never overwrite a faster one. It then reads the row back and asks the board whether this run took first place, so it never announces an improvement another server already beat.
 - **Reads are cached, writes go straight through.** A board's top, its size and each player's best are cached for `cache_seconds` (10); this server's own writes update the cache as they land, so a record set here is on the HUD at once, and another server's is at most `cache_seconds` old. `peek_*` returns the cache and starts one background fetch per key, not one per frame.

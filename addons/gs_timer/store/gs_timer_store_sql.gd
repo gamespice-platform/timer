@@ -8,12 +8,12 @@ const CHANNEL := "timer.store.sql"
 
 ## Schema component, in GameSpice SQL's migration table. A new step is appended to
 ## [method migration_steps]; an existing one is never edited.
-const COMPONENT := "dot_timer"
+const COMPONENT := "gs_timer"
 
 var driver = null
 
 ## Table name prefix. Checked as an identifier before anything is built from it.
-var prefix: String = "dot_timer_"
+var prefix: String = "gs_timer_"
 
 ## Seconds a cached read is served before it is fetched again. 0 = no cache.
 var cache_seconds: float = 10.0
