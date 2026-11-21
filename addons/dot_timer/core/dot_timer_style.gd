@@ -1,9 +1,9 @@
 @tool
-class_name DotTimerStyle
+class_name GSTimerStyle
 extends Resource
 
 ## The records half of a style: is it ranked, what are its points worth, what is the shortest run that counts.
-## Paired with [code]DotFpsStyle[/code] (movement, in GameSpice Player Controller) by [member id]; nothing enforces the pairing.
+## Paired with [code]GSFpsStyle[/code] (movement, in GameSpice Player Controller) by [member id]; nothing enforces the pairing.
 
 @export var id: StringName = &"normal"
 
@@ -43,7 +43,7 @@ extends Resource
 @export_group("Rules")
 
 ## Whether a run that used a practice checkpoint may still be ranked.
-## Off: restoring a checkpoint abandons the run. On: it continues and is filed with [member DotTimerRun.used_checkpoints] set.
+## Off: restoring a checkpoint abandons the run. On: it continues and is filed with [member GSTimerRun.used_checkpoints] set.
 @export var allow_checkpoints: bool = false
 
 ## Whether the timer may run while the player is not on the ground at the start.
@@ -64,7 +64,7 @@ extends Resource
 @export var refuse_vertical_start: bool = false
 
 ## Horizontal speed above which leaving the start does not begin a run, m/s. 0 = none.
-## A refusal, not a clamp: the clamp is [method DotTimerRules.clamp_prespeed]. A start zone's payload [code]"prespeed"[/code] overrides it.
+## A refusal, not a clamp: the clamp is [method GSTimerRules.clamp_prespeed]. A start zone's payload [code]"prespeed"[/code] overrides it.
 @export_range(0.0, 200.0, 0.1) var start_speed_cap: float = 0.0
 
 ## Speed below which every start rule is waived, m/s.
@@ -73,7 +73,7 @@ extends Resource
 
 ## Seconds of run time per second played. 1 for every normal style; 0.5 for a
 ## slow-motion style. The movement half (the world running slower) is the host's; this
-## is what the clock counts. See [member DotTimerRun.time_scale].
+## is what the clock counts. See [member GSTimerRun.time_scale].
 @export_range(0.05, 4.0, 0.05) var timescale: float = 1.0
 
 
@@ -108,7 +108,7 @@ func points_for(
 
 ## The floor a run on [param track] has to clear to be recorded, in seconds.
 func minimum_time_for(track: int) -> float:
-	return minimum_bonus_time if DotTimerTrack.is_bonus(track) else minimum_time
+	return minimum_bonus_time if GSTimerTrack.is_bonus(track) else minimum_time
 
 
 func to_dictionary() -> Dictionary:
@@ -135,8 +135,8 @@ func to_dictionary() -> Dictionary:
 	}
 
 
-static func from_dictionary(data: Dictionary) -> DotTimerStyle:
-	var style := DotTimerStyle.new()
+static func from_dictionary(data: Dictionary) -> GSTimerStyle:
+	var style := GSTimerStyle.new()
 
 	style.id = StringName(str(data.get("id", "normal")))
 	style.display_name = str(data.get("display_name", String(style.id)))
@@ -161,9 +161,9 @@ static func from_dictionary(data: Dictionary) -> DotTimerStyle:
 	return style
 
 
-## The ranking half of the styles [code]DotFpsStyle.defaults()[/code] ships, paired by id.
+## The ranking half of the styles [code]GSFpsStyle.defaults()[/code] ships, paired by id.
 ## Multipliers are the genre's conventional weights: sideways and backwards about double, low gravity less.
-static func defaults() -> Array[DotTimerStyle]:
+static func defaults() -> Array[GSTimerStyle]:
 	var table := [
 		[&"normal", "Normal", "N", "#ffffff", 1.0, 0],
 		[&"sideways", "Sideways", "SW", "#ffb347", 2.0, 1],
@@ -173,10 +173,10 @@ static func defaults() -> Array[DotTimerStyle]:
 		[&"prebhop", "Prebhop", "PB", "#ff5f5f", 1.8, 5],
 	]
 
-	var out: Array[DotTimerStyle] = []
+	var out: Array[GSTimerStyle] = []
 
 	for row in table:
-		var style := DotTimerStyle.new()
+		var style := GSTimerStyle.new()
 		style.id = row[0]
 		style.display_name = row[1]
 		style.short_name = row[2]
@@ -199,4 +199,4 @@ func describe() -> Dictionary:
 
 
 func _to_string() -> String:
-	return "DotTimerStyle(%s)" % display_name
+	return "GSTimerStyle(%s)" % display_name

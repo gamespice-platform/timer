@@ -1,6 +1,6 @@
-class_name DotTimerStoreSqlSpecs
+class_name GSTimerStoreSqlSpecs
 extends RefCounted
-## The GameSpice SQL table specs of DotTimerStoreSql, split out so the store keeps to the size gate.
+## The GameSpice SQL table specs of GSTimerStoreSql, split out so the store keeps to the size gate.
 
 
 ## The tables, as GameSpice SQL specs. Every one is keyed so its hottest query is an index

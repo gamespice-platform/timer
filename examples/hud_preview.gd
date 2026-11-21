@@ -11,7 +11,7 @@ func _ready() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	var run := DotTimerRun.make(0, &"normal", 1.0 / 128.0)
+	var run := GSTimerRun.make(0, &"normal", 1.0 / 128.0)
 	run.begin(0.0)
 	for i in range(128 * 62):
 		run.advance(9.0)
@@ -19,7 +19,7 @@ func _ready() -> void:
 	run.mark_stage(2)
 	run.used_checkpoints = true
 
-	var hud := DotTimerHud.new()
+	var hud := GSTimerHud.new()
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(hud)
 	hud.style_name = "Normal"

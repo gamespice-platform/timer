@@ -8,22 +8,22 @@ const _ICON := "res://addons/dot_timer/icon_placeholder.svg"
 
 const _TYPES := [
 	[
-		"DotTimerManager",
+		"GSTimerManager",
 		"Node",
 		"res://addons/dot_timer/runtime/dot_timer_manager.gd",
 	],
 	[
-		"DotTimerZoneVolume3D",
+		"GSTimerZoneVolume3D",
 		"Node3D",
 		"res://addons/dot_timer/zones/dot_timer_zone_volume_3d.gd",
 	],
 	[
-		"DotTimerZoneVolume2D",
+		"GSTimerZoneVolume2D",
 		"Node2D",
 		"res://addons/dot_timer/zones/dot_timer_zone_volume_2d.gd",
 	],
 	[
-		"DotTimerHud",
+		"GSTimerHud",
 		"Control",
 		"res://addons/dot_timer/ui/dot_timer_hud.gd",
 	],

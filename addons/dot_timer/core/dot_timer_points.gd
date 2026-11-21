@@ -1,8 +1,8 @@
-class_name DotTimerPoints
+class_name GSTimerPoints
 extends RefCounted
 
 ## What a record is worth, and how a player's records add up to a ranking. Three formulas ([constant Formula.CURVE], [constant Formula.TIERED], [constant Formula.PLACEMENT]).
-## Every formula is recomputed for the whole board when its record changes; [DotTimerManager] does that, this class only computes.
+## Every formula is recomputed for the whole board when its record changes; [GSTimerManager] does that, this class only computes.
 
 enum Formula {
 	CURVE,
@@ -87,18 +87,18 @@ func points_for(
 
 	match formula:
 		Formula.TIERED:
-			var effective := 1 if DotTimerTrack.is_bonus(track) else t
+			var effective := 1 if GSTimerTrack.is_bonus(track) else t
 			var worth := (points_per_tier * float(effective) * 1.5 + best / 15.0) * closeness
-			if DotTimerTrack.is_bonus(track):
+			if GSTimerTrack.is_bonus(track):
 				worth *= bonus_factor
 			return worth * multiplier
 
 		Formula.PLACEMENT:
-			if DotTimerTrack.is_bonus(track):
+			if GSTimerTrack.is_bonus(track):
 				return float(BONUS_LADDER[clampi(rank, 1, BONUS_LADDER.size()) - 1]) * multiplier
 			return (placement_points(t, rank, finishers) + COMPLETION[t - 1]) * multiplier
 
-	# CURVE — DotTimerStyle.points_for's formula, kept identical so records already
+	# CURVE — GSTimerStyle.points_for's formula, kept identical so records already
 	# scored with it do not move when the formula is merely restated here.
 	var base := 25.0 * float(t) * float(t) / 10.0
 	return base * (0.2 + 0.8 * closeness) * multiplier

@@ -14,13 +14,13 @@ Only GameSpice Core is required. [GameSpice Player Controller](https://github.co
 ## Use
 
 ```gdscript
-var manager := DotTimerManager.new()
+var manager := GSTimerManager.new()
 manager.authoritative = true          # on the server. A client leaves this false.
 manager.tick_rate = 128
-manager.store = DotTimerStoreFile.at("user://records")   # or DotTimerStoreSql, below
+manager.store = GSTimerStoreFile.at("user://records")   # or GSTimerStoreSql, below
 add_child(manager)
 
-manager.set_styles(DotTimerStyle.defaults())
+manager.set_styles(GSTimerStyle.defaults())
 manager.adopt_engine_tick_rate()      # on a server: whatever sv_tickrate says
 manager.load_zones("res://maps/surf_beginner.zones.json")
 manager.add_player(&"p1", "Christian")
@@ -55,14 +55,14 @@ manager.tick_player(
 | Players | Profile, attempts and time per map, and a dropped run kept for `resume_seconds` (default 600) so a player who disconnects can take it back. |
 | Rules | Start speed caps, ground time before a start, every stage required, validator and checker zones, pause rules, runs stopped by no clip or unexplained teleports. |
 | Practice | `+cp` / `+tp` checkpoints: saving is free, restoring costs you the run. |
-| HUD | Clock, split, speedometer, strafe statistics, record and personal best, a `[P]` marker on practised runs, and `DotTimerSplitsPanel` for staged maps. No art or theme, so you style it. |
-| Config | `DotTimerConfig` layers a file, the environment and the command line, and takes its tick rate from `sv_tickrate`. |
+| HUD | Clock, split, speedometer, strafe statistics, record and personal best, a `[P]` marker on practised runs, and `GSTimerSplitsPanel` for staged maps. No art or theme, so you style it. |
+| Config | `GSTimerConfig` layers a file, the environment and the command line, and takes its tick rate from `sv_tickrate`. |
 
 ## Records in a database
 
 ```gdscript
-var made := DotSql.from_config({"driver": "sqlite", "path": "user://records.db"}, self)
-var store := DotTimerStoreSql.new(made.value)
+var made := GSSql.from_config({"driver": "sqlite", "path": "user://records.db"}, self)
+var store := GSTimerStoreSql.new(made.value)
 var opened := await store.open()      # creates or migrates the tables
 manager.store = store
 ```
@@ -76,16 +76,16 @@ The manager answers what chat commands ask: `profile`, `top_players`, `recent_re
 Walk to one corner, run a command, walk to the other, run it again:
 
 ```gdscript
-var painter := DotTimerZonePainter.on(manager.zones)
+var painter := GSTimerZonePainter.on(manager.zones)
 
-painter.begin(DotTimerZone.Kind.START, DotTimerTrack.MAIN)
+painter.begin(GSTimerZone.Kind.START, GSTimerTrack.MAIN)
 painter.mark(player_position)   # first corner
 painter.mark(player_position)   # second corner, and the zone exists
 
 manager.zones.save_json("user://zones/surf_beginner.json")
 ```
 
-Height is added above the marked corners for you. For 2D, pass `Vector3(x, y, 0)` positions against zones authored with `DotTimerZoneVolume2D`.
+Height is added above the marked corners for you. For 2D, pass `Vector3(x, y, 0)` positions against zones authored with `GSTimerZoneVolume2D`.
 
 ## Testing
 

@@ -1,18 +1,18 @@
 @tool
-class_name DotTimerZoneVolume3D
+class_name GSTimerZoneVolume3D
 extends Node3D
 
-## A zone drawn in the 3D editor instead of in a JSON file; exported into the same [DotTimerZoneSet] the painter writes.
+## A zone drawn in the 3D editor instead of in a JSON file; exported into the same [GSTimerZoneSet] the painter writes.
 ## Draws itself in the editor and does nothing at runtime.
 
-## What the zone is. See [enum DotTimerZone.Kind].
-@export var kind: DotTimerZone.Kind = DotTimerZone.Kind.START:
+## What the zone is. See [enum GSTimerZone.Kind].
+@export var kind: GSTimerZone.Kind = GSTimerZone.Kind.START:
 	set(value):
 		kind = value
 		update_gizmos()
 		notify_property_list_changed()
 
-@export_range(0, 8, 1, "or_greater") var track: int = DotTimerTrack.MAIN
+@export_range(0, 8, 1, "or_greater") var track: int = GSTimerTrack.MAIN
 
 ## Size of the box, in metres, centred on this node.
 ## A size, so the node moves and rotates like any other; the exported zone is axis-aligned (see [method to_zone]).
@@ -24,7 +24,7 @@ extends Node3D
 ## The kind's number: a stage index, a speed cap, a gravity multiplier.
 @export var number: float = 0.0
 
-## Where [constant DotTimerZone.Kind.TELEPORT] and [constant DotTimerZone.Kind.SPAWN]
+## Where [constant GSTimerZone.Kind.TELEPORT] and [constant GSTimerZone.Kind.SPAWN]
 ## send the player. A node so it can be dragged; resolved to a point on export.
 @export var destination: Node3D = null
 
@@ -37,8 +37,8 @@ extends Node3D
 
 ## The zone this node describes, in world space: axis-aligned, from the node's world-space bounds.
 ## A rotated node gives the containing box, slightly larger; an oriented-box test per player per zone per tick costs too much. Rotate the geometry, not the zone.
-func to_zone() -> DotTimerZone:
-	var zone := DotTimerZone.make(kind, track)
+func to_zone() -> GSTimerZone:
+	var zone := GSTimerZone.make(kind, track)
 
 	var half := size * 0.5
 	var centre := global_position
@@ -68,10 +68,10 @@ func to_zone() -> DotTimerZone:
 	return zone
 
 
-## Builds a zone set from every [DotTimerZoneVolume3D] under [param root].
+## Builds a zone set from every [GSTimerZoneVolume3D] under [param root].
 ## Order is the tree's, so ids are stable while the scene is; a replay's crossing marks name zones by id.
-static func collect(root: Node, map_id: StringName) -> DotTimerZoneSet:
-	var set := DotTimerZoneSet.new()
+static func collect(root: Node, map_id: StringName) -> GSTimerZoneSet:
+	var set := GSTimerZoneSet.new()
 	set.map_id = map_id
 
 	_collect_into(root, set)
@@ -79,9 +79,9 @@ static func collect(root: Node, map_id: StringName) -> DotTimerZoneSet:
 	return set
 
 
-static func _collect_into(node: Node, set: DotTimerZoneSet) -> void:
-	if node is DotTimerZoneVolume3D:
-		set.add((node as DotTimerZoneVolume3D).to_zone())
+static func _collect_into(node: Node, set: GSTimerZoneSet) -> void:
+	if node is GSTimerZoneVolume3D:
+		set.add((node as GSTimerZoneVolume3D).to_zone())
 
 	for child in node.get_children():
 		_collect_into(child, set)
@@ -89,19 +89,19 @@ static func _collect_into(node: Node, set: DotTimerZoneSet) -> void:
 
 
 ## A colour per kind: green starts, red finishes, yellow stages, the convention every zone editor uses.
-static func colour_for(k: DotTimerZone.Kind) -> Color:
+static func colour_for(k: GSTimerZone.Kind) -> Color:
 	match k:
-		DotTimerZone.Kind.START:
+		GSTimerZone.Kind.START:
 			return Color(0.2, 0.9, 0.3, 0.35)
-		DotTimerZone.Kind.END:
+		GSTimerZone.Kind.END:
 			return Color(0.95, 0.25, 0.25, 0.35)
-		DotTimerZone.Kind.STAGE:
+		GSTimerZone.Kind.STAGE:
 			return Color(0.95, 0.85, 0.2, 0.35)
-		DotTimerZone.Kind.CHECKPOINT:
+		GSTimerZone.Kind.CHECKPOINT:
 			return Color(0.3, 0.6, 1.0, 0.35)
-		DotTimerZone.Kind.TELEPORT, DotTimerZone.Kind.RESPAWN:
+		GSTimerZone.Kind.TELEPORT, GSTimerZone.Kind.RESPAWN:
 			return Color(0.7, 0.4, 1.0, 0.35)
-		DotTimerZone.Kind.SLAY, DotTimerZone.Kind.STOP:
+		GSTimerZone.Kind.SLAY, GSTimerZone.Kind.STOP:
 			return Color(0.9, 0.4, 0.1, 0.35)
 		_:
 			return Color(0.6, 0.6, 0.6, 0.25)
@@ -110,11 +110,11 @@ static func colour_for(k: DotTimerZone.Kind) -> Color:
 func _get_configuration_warnings() -> PackedStringArray:
 	var out := PackedStringArray()
 
-	if kind == DotTimerZone.Kind.STAGE and int(number) < 1:
+	if kind == GSTimerZone.Kind.STAGE and int(number) < 1:
 		out.append("A stage zone's `number` is the stage, counted from 1.")
 
 	if (
-		kind in [DotTimerZone.Kind.TELEPORT, DotTimerZone.Kind.SPAWN]
+		kind in [GSTimerZone.Kind.TELEPORT, GSTimerZone.Kind.SPAWN]
 		and destination == null
 	):
 		out.append("This kind needs a `destination` node to send the player to.")

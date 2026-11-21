@@ -18,7 +18,7 @@ func _ready() -> void:
 		best[k] = 10.4 + 0.2 * k
 	best[10] = 12.0
 
-	var run := DotTimerRun.make(0, &"normal", 1.0 / 128.0)
+	var run := GSTimerRun.make(0, &"normal", 1.0 / 128.0)
 	run.begin(0.0)
 	var at := [[1, 11.0], [2, 21.0], [3, 31.5], [4, 47.0]]
 	for line: Array in at:
@@ -26,7 +26,7 @@ func _ready() -> void:
 		run.mark_stage(int(line[0]), 0.0)
 	run.ticks = int(70.0 * 128.0)
 
-	var panel := DotTimerSplitsPanel.new()
+	var panel := GSTimerSplitsPanel.new()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.offset_left = 0.0
 	panel.offset_top = 0.0

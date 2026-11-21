@@ -1,11 +1,11 @@
-class_name DotTimerReplayPlayer
+class_name GSTimerReplayPlayer
 extends RefCounted
 
-## Plays a [DotTimerReplay] back: seek, scrub, and sample smoothly between frames.
+## Plays a [GSTimerReplay] back: seek, scrub, and sample smoothly between frames.
 ## Sampled at a time, not stepped per rendered frame; yaw is interpolated the short way round.
 
 ## The replay being played. Null until [method load_replay].
-var replay: DotTimerReplay = null
+var replay: GSTimerReplay = null
 
 ## Where playback is, in seconds.
 var time: float = 0.0
@@ -19,17 +19,17 @@ var playing: bool = false
 var looping: bool = true
 
 
-func load_replay(p_replay: DotTimerReplay) -> DotResult:
+func load_replay(p_replay: GSTimerReplay) -> GSResult:
 	if p_replay == null or p_replay.frames.is_empty():
-		return DotResult.fail(
-			DotError.CODE_INVALID, "That replay has no frames."
+		return GSResult.fail(
+			GSError.CODE_INVALID, "That replay has no frames."
 		)
 
 	replay = p_replay
 	time = 0.0
 	playing = false
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func duration() -> float:
@@ -77,11 +77,11 @@ func advance(delta: float) -> void:
 
 ## The pose at the current time, interpolated between frames.
 ## Null when nothing is loaded, so a caller checks once.
-func sample() -> DotTimerReplay.Frame:
+func sample() -> GSTimerReplay.Frame:
 	return sample_at(time)
 
 
-func sample_at(seconds: float) -> DotTimerReplay.Frame:
+func sample_at(seconds: float) -> GSTimerReplay.Frame:
 	if replay == null or replay.frames.is_empty():
 		return null
 
@@ -100,10 +100,10 @@ func sample_at(seconds: float) -> DotTimerReplay.Frame:
 
 	# Never across a teleport: the player was put there, not carried, and a blend draws them
 	# flying through the map between the two places for one tick.
-	if b.flags & DotTimerReplay.FLAG_TELEPORT:
+	if b.flags & GSTimerReplay.FLAG_TELEPORT:
 		t = 0.0
 
-	var out := DotTimerReplay.Frame.new()
+	var out := GSTimerReplay.Frame.new()
 	out.position = a.position.lerp(b.position, t)
 
 	# The short way round. A yaw of 179° and one of -179° are two degrees apart, and
@@ -128,7 +128,7 @@ func speed_at(seconds: float) -> float:
 	var index := clampi(int(floor(seconds * float(replay.tick_rate))), 0, replay.frames.size() - 2)
 	var a := replay.frames[index]
 	var b := replay.frames[index + 1]
-	if b.flags & DotTimerReplay.FLAG_TELEPORT:
+	if b.flags & GSTimerReplay.FLAG_TELEPORT:
 		return 0.0
 	return a.position.distance_to(b.position) * float(replay.tick_rate)
 

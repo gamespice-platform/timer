@@ -1,14 +1,14 @@
 @tool
-class_name DotTimerConfig
-extends DotConfig
+class_name GSTimerConfig
+extends GSConfig
 
-## Every number a timer server is configured with, layered like every [DotConfig]: defaults, JSON file, [code]DOT_TIMER_*[/code] environment, [code]--timer-*[/code] arguments.
+## Every number a timer server is configured with, layered like every [GSConfig]: defaults, JSON file, [code]DOT_TIMER_*[/code] environment, [code]--timer-*[/code] arguments.
 ## A dedicated server has to be reconfigured without an editor or a rebuild; the tick rate is the field that can silently invalidate a records table.
 
 @export_group("Simulation")
 
 ## Ticks per second the timer counts in. Must match the host's simulation rate; 0 takes it from the engine, which is right on a server.
-## A wrong rate fails nowhere: runs finish, records file and every time is off by the ratio. See [method DotTimerManager.adopt_engine_tick_rate].
+## A wrong rate fails nowhere: runs finish, records file and every time is off by the ratio. See [method GSTimerManager.adopt_engine_tick_rate].
 @export_range(0, 240, 1) var tick_rate: int = 0
 
 ## Fallback when [member tick_rate] is 0 and the engine has not been set.
@@ -20,7 +20,7 @@ extends DotConfig
 ## Whether finished runs are offered to the store at all.
 @export var record_runs: bool = true
 
-## Where a [DotTimerStoreFile] keeps its boards. Empty keeps records in memory only.
+## Where a [GSTimerStoreFile] keeps its boards. Empty keeps records in memory only.
 ## Under [code]user://[/code]: the one directory a server can write on every platform.
 @export var records_directory: String = "user://records"
 
@@ -59,7 +59,7 @@ extends DotConfig
 @export_range(0.0, 500.0, 1.0) var fastest_expected_fall_speed: float = 0.0
 
 ## Whether practice checkpoints exist at all; the server's switch.
-## What using one COSTS is the style's: [member DotTimerStyle.allow_checkpoints].
+## What using one COSTS is the style's: [member GSTimerStyle.allow_checkpoints].
 @export var allow_checkpoints: bool = true
 
 ## Whether a client's own timer may file records. Always false on a client.
@@ -68,8 +68,8 @@ extends DotConfig
 
 @export_group("Ranking")
 
-## Which points formula ranks players: [code]curve[/code], [code]tiered[/code] or [code]placement[/code]; see [DotTimerPoints].
-## Changing it re-scores a board on its next change; [method DotTimerManager.rescore_map] does everything at once.
+## Which points formula ranks players: [code]curve[/code], [code]tiered[/code] or [code]placement[/code]; see [GSTimerPoints].
+## Changing it re-scores a board on its next change; [method GSTimerManager.rescore_map] does everything at once.
 @export var points_formula: String = "curve"
 
 ## Decay down a player's own list of records when totalling them. 1 = a plain sum.
@@ -114,24 +114,24 @@ func cli_prefix() -> String:
 	return "--timer-"
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if tick_rate < 0:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"tick_rate must be 0 (take it from the engine) or positive.",
 			"%d" % tick_rate
 		)
 
-	if DotTimerPoints.formula_from_name(points_formula) < 0:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+	if GSTimerPoints.formula_from_name(points_formula) < 0:
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"points_formula must be curve, tiered or placement.",
 			points_formula
 		)
 
 	if default_tick_rate < 1:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"default_tick_rate must be at least 1.",
 			"%d" % default_tick_rate
 		)
@@ -140,12 +140,12 @@ func validate() -> DotResult:
 		# Not an error: a server that times without keeping records is a legitimate
 		# thing (a practice server, a client's own display). Said out loud because
 		# the combination reads like a mistake and usually is one.
-		DotLog.info(
+		GSLog.info(
 			"timer.config",
 			"records are enabled with no directory; they will be kept in memory only"
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## The rate the timer should actually count in.

@@ -1,5 +1,5 @@
 @tool
-class_name DotTimerHud
+class_name GSTimerHud
 extends Control
 
 ## The timer's own HUD: the clock, the split against a comparison, the speedometer, the stage and the strafe statistics, as a compact overlay.
@@ -99,18 +99,18 @@ enum Placement {
 @export_range(0, 64, 1) var detail_size: int = 0
 
 ## What is currently on screen. Written by [method show_run].
-var run: DotTimerRun = null
+var run: GSTimerRun = null
 var speed: float = 0.0
 var personal_best: float = 0.0
 var world_record: float = 0.0
 var stats: Dictionary = {}
 var style_name: String = ""
 
-## How many stages the track being run has, or 0 for a map without stages. Set by the host from [method DotTimerZoneSet.stage_count].
+## How many stages the track being run has, or 0 for a map without stages. Set by the host from [method GSTimerZoneSet.stage_count].
 ## A split with no denominator does not say how much of the map is left.
 var stage_count: int = 0
 
-## The comparison's split at each stage, by stage number, as [method DotTimerRecord.splits] stores them; set from the same record as [member personal_best].
+## The comparison's split at each stage, by stage number, as [method GSTimerRecord.splits] stores them; set from the same record as [member personal_best].
 ## It lets the stage line show the gap at the last stage reached.
 var stage_comparison: Dictionary = {}
 
@@ -138,7 +138,7 @@ func _ready() -> void:
 
 ## Puts a run on screen. Call once per frame with whatever should be shown.
 func show_run(
-	p_run: DotTimerRun,
+	p_run: GSTimerRun,
 	p_speed: float = 0.0,
 	p_stats: Dictionary = {}
 ) -> void:
@@ -226,7 +226,7 @@ func _rows() -> Array:
 			if against > 0.0:
 				var delta := run.time() - against
 				clock.append([
-					DotTimerRun.format_time(delta, true),
+					GSTimerRun.format_time(delta, true),
 					small,
 					ahead_colour if delta < 0.0 else behind_colour
 				])
@@ -242,7 +242,7 @@ func _rows() -> Array:
 		details.append(_stage_fragment(small))
 
 	if show_track and run != null:
-		var label := DotTimerTrack.name_of(run.track)
+		var label := GSTimerTrack.name_of(run.track)
 
 		if style_name != "":
 			label += " · " + style_name
@@ -272,9 +272,9 @@ func _standing_fragments(small: int) -> Array:
 		return []
 	var out: Array = []
 	if world_record > 0.0:
-		out.append(["WR " + DotTimerRun.format_time(world_record), small, detail_colour])
+		out.append(["WR " + GSTimerRun.format_time(world_record), small, detail_colour])
 	if personal_best > 0.0:
-		out.append(["PB " + DotTimerRun.format_time(personal_best), small, detail_colour])
+		out.append(["PB " + GSTimerRun.format_time(personal_best), small, detail_colour])
 	if rank > 0 and rank_total > 0:
 		out.append(["#%d / %d" % [rank, rank_total], small, ahead_colour if rank == 1 else detail_colour])
 	return out
@@ -298,7 +298,7 @@ func _stage_fragment(small: int) -> Array:
 	var delta := split - against
 
 	return [
-		"%s  %s" % [text, DotTimerRun.format_time(delta, true)],
+		"%s  %s" % [text, GSTimerRun.format_time(delta, true)],
 		small,
 		ahead_colour if delta < 0.0 else behind_colour,
 	]
@@ -458,9 +458,9 @@ func _clock_colour() -> Color:
 		return neutral_colour
 
 	match run.status:
-		DotTimerRun.Status.FINISHED:
+		GSTimerRun.Status.FINISHED:
 			return ahead_colour
-		DotTimerRun.Status.PAUSED:
+		GSTimerRun.Status.PAUSED:
 			return behind_colour
 		_:
 			return neutral_colour
@@ -512,6 +512,6 @@ func describe() -> Dictionary:
 		"corner": Placement.keys()[corner],
 		"block": "%.0f x %.0f" % [block_size().x, block_size().y],
 		"stages": stage_count,
-		"pb": DotTimerRun.format_time(personal_best),
-		"wr": DotTimerRun.format_time(world_record),
+		"pb": GSTimerRun.format_time(personal_best),
+		"wr": GSTimerRun.format_time(world_record),
 	}

@@ -42,19 +42,19 @@ func _check_near(
 
 ## A straight corridor along +X: a start box (x in [0, 4]) and a finish box (x in [96, 100]), with stages between.
 ## The timed distance is exactly 92 metres, so every expected time is arithmetic, not a measurement.
-func _corridor() -> DotTimerZoneSet:
-	var set := DotTimerZoneSet.new()
+func _corridor() -> GSTimerZoneSet:
+	var set := GSTimerZoneSet.new()
 	set.map_id = &"test_corridor"
 
-	set.add(DotTimerZone.make(DotTimerZone.Kind.START).set_box(
+	set.add(GSTimerZone.make(GSTimerZone.Kind.START).set_box(
 		Vector3(0.0, -2.0, -4.0), Vector3(4.0, 4.0, 4.0)
 	))
-	set.add(DotTimerZone.make(DotTimerZone.Kind.END).set_box(
+	set.add(GSTimerZone.make(GSTimerZone.Kind.END).set_box(
 		Vector3(96.0, -2.0, -4.0), Vector3(100.0, 4.0, 4.0)
 	))
 
 	for i in range(1, 4):
-		var stage := DotTimerZone.make(DotTimerZone.Kind.STAGE)
+		var stage := GSTimerZone.make(GSTimerZone.Kind.STAGE)
 		stage.number = float(i)
 		stage.set_box(
 			Vector3(float(i) * 24.0, -2.0, -4.0),
@@ -65,8 +65,8 @@ func _corridor() -> DotTimerZoneSet:
 	return set
 
 
-func _record(player: StringName, time: float) -> DotTimerRecord:
-	var record := DotTimerRecord.new()
+func _record(player: StringName, time: float) -> GSTimerRecord:
+	var record := GSTimerRecord.new()
 	record.map_id = &"m"
 	record.track = 0
 	record.style_id = &"normal"
@@ -77,7 +77,7 @@ func _record(player: StringName, time: float) -> DotTimerRecord:
 
 
 func _walk_manager(
-	manager: DotTimerManager, id: StringName, speed: float
+	manager: GSTimerManager, id: StringName, speed: float
 ) -> void:
 	var step := speed / float(manager.tick_rate)
 	var x := -2.0
@@ -90,18 +90,18 @@ func _walk_manager(
 
 
 ## Stands [param id] still past the end for [param ticks] ticks: a replay's run-out.
-func _idle_manager(manager: DotTimerManager, id: StringName, ticks: int) -> void:
+func _idle_manager(manager: GSTimerManager, id: StringName, ticks: int) -> void:
 	for _i in range(ticks):
 		manager.tick_player(id, Vector3(104.0, 0.0, 0.0), Vector3.ZERO, true, true)
 
 
-func _check_replay_on_disk(manager: DotTimerManager, path: String, record: DotTimerRecord) -> void:
-	var loaded := DotTimerReplay.load_from(path)
+func _check_replay_on_disk(manager: GSTimerManager, path: String, record: GSTimerRecord) -> void:
+	var loaded := GSTimerReplay.load_from(path)
 	_check(loaded.ok, "which loads back", str(loaded.error))
 
 	if loaded.ok:
-		var replay: DotTimerReplay = loaded.value
-		var kept: DotTimerReplay = manager.player(&"p1").last_replay
+		var replay: GSTimerReplay = loaded.value
+		var kept: GSTimerReplay = manager.player(&"p1").last_replay
 		_check(
 			kept != null and replay.frames.size() == kept.frames.size(),
 			"with every frame that was recorded",
@@ -118,7 +118,7 @@ func _check_replay_on_disk(manager: DotTimerManager, path: String, record: DotTi
 			"and the run between them is the run's own time", "%.3f against %.3f" % [replay.run_end_seconds() - replay.run_start_seconds(), replay.time])
 
 
-func _check_replay_names(manager: DotTimerManager) -> void:
+func _check_replay_names(manager: GSTimerManager) -> void:
 	# Ids differing only where the sanitiser substitutes must not share a file: without the hash suffix surf_kitsune2 and surf_kitsune3 became one leaderboard.
 	var a := _record(&"p1", 1.0)
 	var b := _record(&"p1", 1.0)
@@ -142,27 +142,27 @@ func _test_replay_files() -> void:
 
 	# The half that was missing: the recorder ran and `replays_directory` was read by nothing, so replays were lost at exit. Only a file-exists check tells.
 	var directory := "user://test_replays"
-	DotPaths.remove_tree(directory)
+	GSPaths.remove_tree(directory)
 
-	var manager := DotTimerManager.new()
+	var manager := GSTimerManager.new()
 	manager.authoritative = true
 	manager.tick_rate = 128
-	manager.store = DotTimerStoreMemory.new()
+	manager.store = GSTimerStoreMemory.new()
 	manager.record_replays = true
 	manager.replays_directory = directory
 	add_child(manager)
 
 	manager.set_zones(_corridor())
 
-	var styles := DotTimerStyle.defaults()
+	var styles := GSTimerStyle.defaults()
 	styles[0].minimum_time = 0.0
 	manager.set_styles(styles)
 
 	manager.add_player(&"p1", "Player One")
 
-	var accepted: Array[DotTimerRecord] = []
+	var accepted: Array[GSTimerRecord] = []
 	manager.record_accepted.connect(
-		func(record: DotTimerRecord, _previous: DotTimerRecord, _rank: int) -> void:
+		func(record: GSTimerRecord, _previous: GSTimerRecord, _rank: int) -> void:
 			accepted.append(record)
 	)
 
@@ -215,9 +215,9 @@ func _test_replay_files() -> void:
 func _test_replay_round_trip() -> void:
 	_section("replays")
 
-	var replay := DotTimerReplay.new()
+	var replay := GSTimerReplay.new()
 	replay.map_id = &"test_corridor"
-	replay.track = DotTimerTrack.of_bonus(2)
+	replay.track = GSTimerTrack.of_bonus(2)
 	replay.style_id = &"sideways"
 	replay.player_name = "Player One"
 	replay.tick_rate = 128
@@ -231,11 +231,11 @@ func _test_replay_round_trip() -> void:
 			Vector3(t * 3.0, sin(t) * 2.0, cos(t) * 2.0),
 			wrapf(t * 40.0, -180.0, 180.0),
 			sin(t) * 30.0,
-			DotTimerReplay.FLAG_GROUNDED if i % 3 == 0 else 0
+			GSTimerReplay.FLAG_GROUNDED if i % 3 == 0 else 0
 		)
 
 	var bytes := replay.to_bytes()
-	var parsed := DotTimerReplay.from_bytes(bytes)
+	var parsed := GSTimerReplay.from_bytes(bytes)
 
 	_check(parsed.ok, "a replay round-trips through bytes",
 		parsed.error.message if not parsed.ok else "")
@@ -243,7 +243,7 @@ func _test_replay_round_trip() -> void:
 	if not parsed.ok:
 		return
 
-	var back: DotTimerReplay = parsed.value
+	var back: GSTimerReplay = parsed.value
 
 	_check(back.frames.size() == replay.frames.size(), "with every frame")
 	_check(back.map_id == replay.map_id, "and the map")
@@ -279,23 +279,23 @@ func _test_replay_round_trip() -> void:
 	_done()
 
 
-func _check_replay_refusals(bytes: PackedByteArray, replay: DotTimerReplay) -> void:
+func _check_replay_refusals(bytes: PackedByteArray, replay: GSTimerReplay) -> void:
 	_check(
-		not DotTimerReplay.from_bytes(PackedByteArray([1, 2, 3])).ok,
+		not GSTimerReplay.from_bytes(PackedByteArray([1, 2, 3])).ok,
 		"a short buffer is refused"
 	)
 
 	var corrupt := bytes.duplicate()
 	corrupt[0] = 0
 	_check(
-		not DotTimerReplay.from_bytes(corrupt).ok,
+		not GSTimerReplay.from_bytes(corrupt).ok,
 		"and one with the wrong magic"
 	)
 
 	# A hostile frame count must not be believed before allocating for it.
 	var lying := replay.to_bytes()
 	_check(
-		DotTimerReplay.from_bytes(lying.slice(0, 40)).ok == false,
+		GSTimerReplay.from_bytes(lying.slice(0, 40)).ok == false,
 		"and a truncated file is refused rather than half-read"
 	)
 
@@ -303,13 +303,13 @@ func _check_replay_refusals(bytes: PackedByteArray, replay: DotTimerReplay) -> v
 func _test_replay_playback() -> void:
 	_section("replay playback")
 
-	var replay := DotTimerReplay.new()
+	var replay := GSTimerReplay.new()
 	replay.tick_rate = 100
 
 	for i in range(1000):
 		replay.append(Vector3(float(i), 0.0, 0.0), 0.0, 0.0)
 
-	var player := DotTimerReplayPlayer.new()
+	var player := GSTimerReplayPlayer.new()
 	var loaded := player.load_replay(replay)
 
 	_check(loaded.ok, "a replay loads")
@@ -327,13 +327,13 @@ func _test_replay_playback() -> void:
 	)
 
 	# The wrapping test: a yaw going from 179 to -179 is two degrees, not 358.
-	var wrapping := DotTimerReplay.new()
+	var wrapping := GSTimerReplay.new()
 	wrapping.tick_rate = 100
 	wrapping.append(Vector3.ZERO, 179.0, 0.0)
 	wrapping.append(Vector3.ZERO, -179.0, 0.0)
 	wrapping.append(Vector3.ZERO, -179.0, 0.0)
 
-	var spinner := DotTimerReplayPlayer.new()
+	var spinner := GSTimerReplayPlayer.new()
 	spinner.load_replay(wrapping)
 
 	var halfway := spinner.sample_at(0.005)
@@ -366,21 +366,21 @@ func _test_replay_playback() -> void:
 func _test_replay_flags() -> void:
 	_section("replay flags: teleport, ducked, jumped, buttons")
 
-	var r := DotTimerReplay.new()
+	var r := GSTimerReplay.new()
 	r.tick_rate = 100
-	r.append(Vector3(0, 0, 0), 0.0, 0.0, DotTimerReplay.FLAG_DUCKED, 5)
-	r.append(Vector3(0.1, 0, 0), 0.0, 0.0, DotTimerReplay.FLAG_JUMPED, 0)
-	r.append(Vector3(30.0, 0, 0), 0.0, 0.0, DotTimerReplay.FLAG_TELEPORT, 0)
+	r.append(Vector3(0, 0, 0), 0.0, 0.0, GSTimerReplay.FLAG_DUCKED, 5)
+	r.append(Vector3(0.1, 0, 0), 0.0, 0.0, GSTimerReplay.FLAG_JUMPED, 0)
+	r.append(Vector3(30.0, 0, 0), 0.0, 0.0, GSTimerReplay.FLAG_TELEPORT, 0)
 	r.append(Vector3(30.1, 0, 0), 0.0, 0.0, 0, 0)
-	var back := DotTimerReplay.from_bytes(r.to_bytes())
-	var got: DotTimerReplay = back.value if back.ok else null
-	_check(got != null and got.frames[0].flags & DotTimerReplay.FLAG_DUCKED and got.frames[0].buttons == 5
-		and got.frames[1].flags & DotTimerReplay.FLAG_JUMPED and got.frames[2].flags & DotTimerReplay.FLAG_TELEPORT,
+	var back := GSTimerReplay.from_bytes(r.to_bytes())
+	var got: GSTimerReplay = back.value if back.ok else null
+	_check(got != null and got.frames[0].flags & GSTimerReplay.FLAG_DUCKED and got.frames[0].buttons == 5
+		and got.frames[1].flags & GSTimerReplay.FLAG_JUMPED and got.frames[2].flags & GSTimerReplay.FLAG_TELEPORT,
 		"ducked, jumped, a teleport and the buttons survive the bytes")
 	_check(got != null and got.frames[2].position.is_equal_approx(Vector3(30.0, 0, 0)) and got.frames[3].buttons == 0,
 		"and the teleport lands where it was, written whole")
 
-	var player := DotTimerReplayPlayer.new()
+	var player := GSTimerReplayPlayer.new()
 	var _loaded := player.load_replay(r)
 	var mid := player.sample_at(1.5 / 100.0)
 	_check(mid != null and mid.position.is_equal_approx(Vector3(0.1, 0, 0)), "playback does not blend across a teleport",
@@ -388,20 +388,20 @@ func _test_replay_flags() -> void:
 	_check(is_zero_approx(player.speed_at(1.0 / 100.0)) and is_equal_approx(player.speed_at(0.0), 10.0),
 		"and no speed is derived across one, where it is across a step", "%.2f / %.2f" % [player.speed_at(1.0 / 100.0), player.speed_at(0.0)])
 
-	var recorder := DotTimerReplayRecorder.new()
+	var recorder := GSTimerReplayRecorder.new()
 	recorder.pre_roll_seconds = 0.0
 	recorder.begin(&"m", 0, &"normal", "p", 100)
 	recorder.feed(Vector3(0, 0, 0), 0.0, 0.0)
 	recorder.feed(Vector3(0.1, 0, 0), 0.0, 0.0)
 	recorder.feed(Vector3(20.0, 0, 0), 0.0, 0.0)
 	var made := recorder.finish(0.03)
-	_check(made != null and made.frames[2].flags & DotTimerReplay.FLAG_TELEPORT and not (made.frames[1].flags & DotTimerReplay.FLAG_TELEPORT),
+	_check(made != null and made.frames[2].flags & GSTimerReplay.FLAG_TELEPORT and not (made.frames[1].flags & GSTimerReplay.FLAG_TELEPORT),
 		"the recorder marks a move too far for a tick as a teleport by itself")
 
-	var manager := DotTimerManager.new()
+	var manager := GSTimerManager.new()
 	manager.authoritative = true
 	manager.tick_rate = 128
-	manager.store = DotTimerStoreMemory.new()
+	manager.store = GSTimerStoreMemory.new()
 	manager.record_replays = true
 	add_child(manager)
 	manager.set_zones(_corridor())
@@ -412,14 +412,14 @@ func _test_replay_flags() -> void:
 	while x <= 104.0:
 		x += step
 		i += 1
-		var flags := DotTimerReplay.FLAG_DUCKED if i % 2 == 0 else 0
+		var flags := GSTimerReplay.FLAG_DUCKED if i % 2 == 0 else 0
 		manager.tick_player(&"f1", Vector3(x, 0.0, 0.0), Vector3(10.0, 0, 0), true, true, 0.0, 0.0, 3, flags)
-	var last: DotTimerReplay = manager.player(&"f1").last_replay
+	var last: GSTimerReplay = manager.player(&"f1").last_replay
 	var ducked := 0
 	var pressed := 0
 	if last != null:
 		for frame in last.frames:
-			ducked += 1 if frame.flags & DotTimerReplay.FLAG_DUCKED else 0
+			ducked += 1 if frame.flags & GSTimerReplay.FLAG_DUCKED else 0
 			pressed += 1 if frame.buttons == 3 else 0
 	_check(last != null and ducked > 0 and pressed == last.frames.size(), "the manager records the caller's flags and buttons",
 		"%d ducked, %d with buttons of %d" % [ducked, pressed, last.frames.size() if last != null else 0])
@@ -434,7 +434,7 @@ func _check_v1_replay_reads() -> void:
 	# A version-1 file (no start/end, no buttons byte) still reads.
 	var v1 := StreamPeerBuffer.new()
 	v1.big_endian = false
-	v1.put_u32(DotTimerReplay.MAGIC)
+	v1.put_u32(GSTimerReplay.MAGIC)
 	v1.put_u8(1)
 	v1.put_u8(0)
 	v1.put_u16(128)
@@ -444,22 +444,22 @@ func _check_v1_replay_reads() -> void:
 		v1.put_u8(text.length())
 		v1.put_data(text.to_utf8_buffer())
 	v1.put_u32(1)
-	v1.put_u8(DotTimerReplay.FLAG_KEYFRAME)
+	v1.put_u8(GSTimerReplay.FLAG_KEYFRAME)
 	v1.put_32(1000)
 	v1.put_32(0)
 	v1.put_32(0)
 	v1.put_16(0)
 	v1.put_16(0)
-	var old := DotTimerReplay.from_bytes(v1.data_array)
-	_check(old.ok and (old.value as DotTimerReplay).frames.size() == 1 and (old.value as DotTimerReplay).start_frame == 0,
+	var old := GSTimerReplay.from_bytes(v1.data_array)
+	_check(old.ok and (old.value as GSTimerReplay).frames.size() == 1 and (old.value as GSTimerReplay).start_frame == 0,
 		"and a version-1 replay still reads", str(old.error) if not old.ok else "")
 
 
 func _test_replay_ceiling() -> void:
 	_section("replay ceiling")
-	var recorder := DotTimerReplayRecorder.new()
+	var recorder := GSTimerReplayRecorder.new()
 	recorder.max_seconds = 0.5
-	recorder.begin(&"bhop_cap", DotTimerTrack.MAIN, &"normal", "Ada", 128)
+	recorder.begin(&"bhop_cap", GSTimerTrack.MAIN, &"normal", "Ada", 128)
 	for i in range(100):
 		recorder.capture(Vector3(0.0, 0.0, float(i)), 0.0, 0.0, 0)
 	_check(recorder.frame_count() == 64, "frames past max_seconds are not kept", str(recorder.frame_count()))
@@ -467,9 +467,9 @@ func _test_replay_ceiling() -> void:
 	var replay := recorder.finish(0.78)
 	_check(replay != null and replay.frames.size() == 64, "a capped replay still finishes")
 
-	var config := DotTimerConfig.new()
+	var config := GSTimerConfig.new()
 	config.max_replay_seconds = 10.0
-	var manager := DotTimerManager.new()
+	var manager := GSTimerManager.new()
 	manager.config = config
 	add_child(manager)
 	manager.add_player(&"capped", "Capped")

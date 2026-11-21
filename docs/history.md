@@ -3,7 +3,7 @@
 Bugs worth recognising if they come back. None produced an error anywhere. The rule each left is in the topic docs.
 
 - **The finishing tick was subtracted instead of added**, costing exactly one tick (7.8 ms at 128 Hz, 15.6 ms at 64 Hz). Every single-tick-rate test passed; `_test_tickrate_agreement` found it.
-- **`DotTimerNet.Finish.time()` still subtracted it** after the run was fixed: the wire's copy of the arithmetic was a second copy, and every finish a server announced was two fractions short. Found by game-airdrift's netcode suite comparing the two at 1e-4 s.
+- **`GSTimerNet.Finish.time()` still subtracted it** after the run was fixed: the wire's copy of the arithmetic was a second copy, and every finish a server announced was two fractions short. Found by game-airdrift's netcode suite comparing the two at 1e-4 s.
 - **Splits were quantised to the tick** while the run's time was not.
 - **A signed distance of exactly zero was folded into "inside"**, so every run on a course of round numbers was exactly one tick long, at every tick rate. Found by the 2D suite.
 - **`effect_requested` was emitted by nothing at all.** Declared here, forwarded by the manager, handled by game-playlot and game-airdrift, and fired by no line in the addon: RESPAWN, SLAY and TELEPORT zones did nothing anywhere, and a player who fell off a surf map fell for ever. A zone kind the timer has no rule for is legitimate, so "reached a RESPAWN and did nothing" was indistinguishable from correct behaviour inside this addon: a value consumed by two games and produced by nobody. It also invalidated a passing test in game-airdrift, which had been counting a bot falling through the void as "airborne, so surfing".

@@ -1,10 +1,10 @@
-class_name DotTimerNet
+class_name GSTimerNet
 extends RefCounted
 
-## What a timer has to replicate, and how to move it between a [DotTimerRun] and a wire.
+## What a timer has to replicate, and how to move it between a [GSTimerRun] and a wire.
 ## The writer and reader are typed [Variant] and called by name, so GameSpice Net is not a dependency (a missing class_name fails the parse).
 
-## Status, as two bits. [enum DotTimerRun.Status] has four members and always will:
+## Status, as two bits. [enum GSTimerRun.Status] has four members and always will:
 ## a fifth would be a different concept, not another state of this one.
 const STATUS_BITS := 2
 
@@ -38,7 +38,7 @@ static func write_open(writer: Variant, value: int, short_bits: int) -> void:
 		writer.write_uint(value, short_bits)
 		return
 	if value < 0 or value >= (1 << WIDE_BITS):
-		push_error("DotTimerNet.write_open: %d does not fit; sending 0" % value)
+		push_error("GSTimerNet.write_open: %d does not fit; sending 0" % value)
 		writer.write_uint(0, short_bits)
 		return
 	writer.write_uint(escape, short_bits)
@@ -62,14 +62,14 @@ static func open_bits(value: int, short_bits: int) -> int:
 ##
 ## Written on every change of state, not every tick. See the class documentation.
 class RunState extends RefCounted:
-	var status: int = DotTimerRun.Status.STOPPED
-	var track: int = DotTimerTrack.MAIN
+	var status: int = GSTimerRun.Status.STOPPED
+	var track: int = GSTimerTrack.MAIN
 	var style_index: int = 0
 
 	## The server tick the run began on. The client's own tick counter does the rest.
 	var start_tick: int = 0
 
-	## The sub-tick offset the run began with. See [DotTimerRun.start_offset].
+	## The sub-tick offset the run began with. See [GSTimerRun.start_offset].
 	var start_offset: float = 0.0
 
 	## Highest stage reached, so a rejoining client's HUD is not blank.
@@ -77,32 +77,32 @@ class RunState extends RefCounted:
 
 	func write(writer: Variant) -> void:
 		writer.write_uint(status, STATUS_BITS)
-		DotTimerTrack.write_wire(writer, track)
+		GSTimerTrack.write_wire(writer, track)
 		writer.write_uint(style_index, STYLE_BITS)
 		writer.write_uint(start_tick, TICK_BITS)
 		writer.write_float_range(start_offset, 0.0, 1.0, OFFSET_BITS)
-		DotTimerNet.write_open(writer, stage, STAGE_BITS)
+		GSTimerNet.write_open(writer, stage, STAGE_BITS)
 
 	func read(reader: Variant) -> void:
 		status = reader.read_uint(STATUS_BITS)
-		track = DotTimerTrack.read_wire(reader)
+		track = GSTimerTrack.read_wire(reader)
 		style_index = reader.read_uint(STYLE_BITS)
 		start_tick = reader.read_uint(TICK_BITS)
 		start_offset = reader.read_float_range(0.0, 1.0, OFFSET_BITS)
-		stage = DotTimerNet.read_open(reader, STAGE_BITS)
+		stage = GSTimerNet.read_open(reader, STAGE_BITS)
 
 	## Bits this state costs, for the current field values.
 	func estimated_bits() -> int:
 		return (
-			STATUS_BITS + DotTimerTrack.wire_bits(track) + STYLE_BITS
-			+ TICK_BITS + OFFSET_BITS + DotTimerNet.open_bits(stage, STAGE_BITS)
+			STATUS_BITS + GSTimerTrack.wire_bits(track) + STYLE_BITS
+			+ TICK_BITS + OFFSET_BITS + GSTimerNet.open_bits(stage, STAGE_BITS)
 		)
 
 
 ## A finished run, as the server announces it.
 ## Sent as ticks and offsets, not a float, so the client reproduces the server's arithmetic exactly.
 class Finish extends RefCounted:
-	var track: int = DotTimerTrack.MAIN
+	var track: int = GSTimerTrack.MAIN
 	var style_index: int = 0
 	var ticks: int = 0
 	var start_offset: float = 0.0
@@ -111,39 +111,39 @@ class Finish extends RefCounted:
 	## Whether the run was filed, and the rank if it was. 0 means it was not.
 	var rank: int = 0
 
-	## The same arithmetic as [method DotTimerRun.time]: the start fraction comes off, the end fraction goes on.
+	## The same arithmetic as [method GSTimerRun.time]: the start fraction comes off, the end fraction goes on.
 	func time(tick_interval: float) -> float:
 		return maxf(
 			(float(ticks) - start_offset + end_offset) * tick_interval, 0.0
 		)
 
 	func write(writer: Variant) -> void:
-		DotTimerTrack.write_wire(writer, track)
+		GSTimerTrack.write_wire(writer, track)
 		writer.write_uint(style_index, STYLE_BITS)
 		writer.write_uint(ticks, TICK_BITS)
 		writer.write_float_range(start_offset, 0.0, 1.0, OFFSET_BITS)
 		writer.write_float_range(end_offset, 0.0, 1.0, OFFSET_BITS)
-		DotTimerNet.write_open(writer, rank, RANK_BITS)
+		GSTimerNet.write_open(writer, rank, RANK_BITS)
 
 	func read(reader: Variant) -> void:
-		track = DotTimerTrack.read_wire(reader)
+		track = GSTimerTrack.read_wire(reader)
 		style_index = reader.read_uint(STYLE_BITS)
 		ticks = reader.read_uint(TICK_BITS)
 		start_offset = reader.read_float_range(0.0, 1.0, OFFSET_BITS)
 		end_offset = reader.read_float_range(0.0, 1.0, OFFSET_BITS)
-		rank = DotTimerNet.read_open(reader, RANK_BITS)
+		rank = GSTimerNet.read_open(reader, RANK_BITS)
 
 	## Bits this finish costs, for the current field values.
 	func estimated_bits() -> int:
 		return (
-			DotTimerTrack.wire_bits(track) + STYLE_BITS + TICK_BITS
-			+ OFFSET_BITS * 2 + DotTimerNet.open_bits(rank, RANK_BITS)
+			GSTimerTrack.wire_bits(track) + STYLE_BITS + TICK_BITS
+			+ OFFSET_BITS * 2 + GSTimerNet.open_bits(rank, RANK_BITS)
 		)
 
 
 ## Builds the replicated state for a run.
 static func state_of(
-	run: DotTimerRun, server_tick: int, style_index: int
+	run: GSTimerRun, server_tick: int, style_index: int
 ) -> RunState:
 	var out := RunState.new()
 
@@ -158,7 +158,7 @@ static func state_of(
 
 
 static func finish_of(
-	run: DotTimerRun, style_index: int, rank: int
+	run: GSTimerRun, style_index: int, rank: int
 ) -> Finish:
 	var out := Finish.new()
 
@@ -176,10 +176,10 @@ static func finish_of(
 ## The client's clock, not the server's, so the HUD advances between packets instead of stepping once per snapshot.
 static func run_from_state(
 	state: RunState, current_tick: int, tick_interval: float, style_id: StringName
-) -> DotTimerRun:
-	var run := DotTimerRun.make(state.track, style_id, tick_interval)
+) -> GSTimerRun:
+	var run := GSTimerRun.make(state.track, style_id, tick_interval)
 
-	run.status = state.status as DotTimerRun.Status
+	run.status = state.status as GSTimerRun.Status
 	run.ticks = maxi(current_tick - state.start_tick, 0)
 	run.start_offset = state.start_offset
 	run.stage = state.stage

@@ -1,4 +1,4 @@
-class_name DotTimerZonePainter
+class_name GSTimerZonePainter
 extends RefCounted
 
 ## Draws zones from inside the game, with two points and a console command, on the server's copy of the set.
@@ -13,11 +13,11 @@ const DEFAULT_HEIGHT := 3.0
 ## Horizontal padding, in metres, so a corner marked slightly inside still encloses it.
 const DEFAULT_PADDING := 0.5
 
-var zones: DotTimerZoneSet = null
+var zones: GSTimerZoneSet = null
 
 ## What is being drawn, once [method begin] has been called.
-var kind: DotTimerZone.Kind = DotTimerZone.Kind.START
-var track: int = DotTimerTrack.MAIN
+var kind: GSTimerZone.Kind = GSTimerZone.Kind.START
+var track: int = GSTimerTrack.MAIN
 var number: float = 0.0
 
 ## Height added above the marked corners. See [constant DEFAULT_HEIGHT].
@@ -30,26 +30,26 @@ var _first: Vector3 = Vector3.ZERO
 var _have_first: bool = false
 
 
-static func on(set: DotTimerZoneSet) -> DotTimerZonePainter:
-	var painter := DotTimerZonePainter.new()
+static func on(set: GSTimerZoneSet) -> GSTimerZonePainter:
+	var painter := GSTimerZonePainter.new()
 	painter.zones = set
 	return painter
 
 
 ## Starts drawing a zone. Discards a half-drawn one.
 func begin(
-	p_kind: DotTimerZone.Kind,
-	p_track: int = DotTimerTrack.MAIN,
+	p_kind: GSTimerZone.Kind,
+	p_track: int = GSTimerTrack.MAIN,
 	p_number: float = 0.0
-) -> DotResult:
+) -> GSResult:
 	if zones == null:
-		return DotResult.fail(
-			DotError.CODE_STATE, "The painter has no zone set to draw into."
+		return GSResult.fail(
+			GSError.CODE_STATE, "The painter has no zone set to draw into."
 		)
 
-	if not DotTimerTrack.is_valid(p_track):
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+	if not GSTimerTrack.is_valid(p_track):
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"That is not a track.",
 			"%d, expected 0 or more" % p_track
 		)
@@ -59,7 +59,7 @@ func begin(
 	number = p_number
 	_have_first = false
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func is_drawing() -> bool:
@@ -68,16 +68,16 @@ func is_drawing() -> bool:
 
 ## Marks a corner. The second mark completes the zone and returns it.
 ## Returns a success carrying null for the first corner, so a console command can say "corner one" or "done" from one value.
-func mark(at: Vector3) -> DotResult:
+func mark(at: Vector3) -> GSResult:
 	if zones == null:
-		return DotResult.fail(
-			DotError.CODE_STATE, "The painter has no zone set to draw into."
+		return GSResult.fail(
+			GSError.CODE_STATE, "The painter has no zone set to draw into."
 		)
 
 	if not _have_first:
 		_first = at
 		_have_first = true
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	_have_first = false
 
@@ -92,7 +92,7 @@ func mark(at: Vector3) -> DotResult:
 		maxf(_first.z, at.z) + padding
 	)
 
-	var zone := DotTimerZone.make(kind, track)
+	var zone := GSTimerZone.make(kind, track)
 	zone.set_box(low, high)
 	zone.number = number
 
@@ -103,18 +103,18 @@ func mark(at: Vector3) -> DotResult:
 
 	zones.add(zone)
 
-	DotLog.info(CHANNEL, "zone drawn", zone.describe())
+	GSLog.info(CHANNEL, "zone drawn", zone.describe())
 
-	return DotResult.success(zone)
+	return GSResult.success(zone)
 
 
 ## Adds a point-kind zone — a track's spawn — at one position.
 func mark_point(
-	at: Vector3, yaw: float = 0.0, p_kind: DotTimerZone.Kind = DotTimerZone.Kind.SPAWN
-) -> DotResult:
+	at: Vector3, yaw: float = 0.0, p_kind: GSTimerZone.Kind = GSTimerZone.Kind.SPAWN
+) -> GSResult:
 	if zones == null:
-		return DotResult.fail(
-			DotError.CODE_STATE, "The painter has no zone set to draw into."
+		return GSResult.fail(
+			GSError.CODE_STATE, "The painter has no zone set to draw into."
 		)
 
 	# Replaced rather than added: a track has one spawn, and an admin re-marking it
@@ -123,13 +123,13 @@ func mark_point(
 	for existing in zones.of_kind(p_kind, track):
 		zones.remove_id(existing.id)
 
-	var zone := DotTimerZone.make(p_kind, track)
+	var zone := GSTimerZone.make(p_kind, track)
 	zone.destination = at
 	zone.destination_yaw = yaw
 
 	zones.add(zone)
 
-	return DotResult.success(zone)
+	return GSResult.success(zone)
 
 
 ## Abandons a half-drawn zone.
@@ -138,14 +138,14 @@ func cancel() -> void:
 
 
 ## Removes the most recently added zone. The undo an admin reaches for.
-func undo() -> DotResult:
+func undo() -> GSResult:
 	if zones == null or zones.zones.is_empty():
-		return DotResult.fail(DotError.CODE_STATE, "There is nothing to undo.")
+		return GSResult.fail(GSError.CODE_STATE, "There is nothing to undo.")
 
 	var last := zones.zones[zones.zones.size() - 1]
 	zones.remove_id(last.id)
 
-	return DotResult.success(last)
+	return GSResult.success(last)
 
 
 ## The zones on a track, for a "list what I have drawn" command.
@@ -158,8 +158,8 @@ func summary() -> PackedStringArray:
 	for zone in zones.zones:
 		out.append("#%d %-14s %-7s %s" % [
 			zone.id,
-			DotTimerZone.kind_name(zone.kind),
-			DotTimerTrack.short_name_of(zone.track),
+			GSTimerZone.kind_name(zone.kind),
+			GSTimerTrack.short_name_of(zone.track),
 			"(%.1f, %.1f, %.1f) %.1f x %.1f x %.1f" % [
 				zone.centre().x, zone.centre().y, zone.centre().z,
 				zone.size().x, zone.size().y, zone.size().z
@@ -175,8 +175,8 @@ func summary() -> PackedStringArray:
 func describe() -> Dictionary:
 	return {
 		"drawing": _have_first,
-		"kind": DotTimerZone.kind_name(kind),
-		"track": DotTimerTrack.short_name_of(track),
+		"kind": GSTimerZone.kind_name(kind),
+		"track": GSTimerTrack.short_name_of(track),
 		"height": height,
 		"zones": zones.zones.size() if zones != null else 0,
 	}

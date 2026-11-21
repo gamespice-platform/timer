@@ -1,4 +1,4 @@
-class_name DotTimerRules
+class_name GSTimerRules
 extends RefCounted
 
 ## The velocity rules a timer imposes on a player, as pure functions; call them from the movement loop after the timer has ticked.
@@ -37,20 +37,20 @@ static func clamp_prespeed_2d(velocity: Vector3, limit: float) -> Vector3:
 	return Vector3(velocity.x * scale, velocity.y * scale, velocity.z)
 
 
-## Applies a [constant DotTimerZone.Kind.SPEED_LIMIT] zone, if one is in force.
+## Applies a [constant GSTimerZone.Kind.SPEED_LIMIT] zone, if one is in force.
 ##
-## [param zone] is what [method DotTimer.effect] returned, or null.
-static func apply_speed_limit(velocity: Vector3, zone: DotTimerZone) -> Vector3:
+## [param zone] is what [method GSTimer.effect] returned, or null.
+static func apply_speed_limit(velocity: Vector3, zone: GSTimerZone) -> Vector3:
 	if zone == null or zone.number <= 0.0:
 		return velocity
 
 	return clamp_prespeed(velocity, zone.number)
 
 
-## Applies a [constant DotTimerZone.Kind.PUSH] zone for one tick.
+## Applies a [constant GSTimerZone.Kind.PUSH] zone for one tick.
 ## An acceleration, so it composes with friction and gravity; a velocity assignment would cancel a fall through it.
 static func apply_push(
-	velocity: Vector3, zone: DotTimerZone, delta: float
+	velocity: Vector3, zone: GSTimerZone, delta: float
 ) -> Vector3:
 	if zone == null:
 		return velocity

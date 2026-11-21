@@ -7,7 +7,7 @@ extends "replay_checks.gd"
 func _test_zone_geometry() -> void:
 	_section("zone geometry")
 
-	var box := DotTimerZone.make(DotTimerZone.Kind.START)
+	var box := GSTimerZone.make(GSTimerZone.Kind.START)
 	box.set_box(Vector3(4.0, 0.0, 4.0), Vector3(0.0, -2.0, 0.0))
 
 	_check(
@@ -31,7 +31,7 @@ func _test_zone_geometry() -> void:
 		"and is negative inside"
 	)
 
-	var sphere := DotTimerZone.make(DotTimerZone.Kind.END)
+	var sphere := GSTimerZone.make(GSTimerZone.Kind.END)
 	sphere.set_sphere(Vector3(10.0, 0.0, 0.0), 3.0)
 
 	_check(sphere.contains(Vector3(12.0, 0.0, 0.0)), "a sphere contains a near point")
@@ -43,7 +43,7 @@ func _test_zone_geometry() -> void:
 
 	# A 2D zone is one whose third axis is unbounded, which is the one thing a 2D
 	# game has to get right and the one place it is easy to get wrong.
-	var flat := DotTimerZone.make(DotTimerZone.Kind.START)
+	var flat := GSTimerZone.make(GSTimerZone.Kind.START)
 	flat.set_box(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 10.0, 0.0))
 
 	_check(
@@ -66,7 +66,7 @@ func _test_zone_set_round_trip() -> void:
 	var set := _corridor()
 	set.meta["tier"] = 4
 
-	var parsed := DotTimerZoneSet.from_json(set.to_json())
+	var parsed := GSTimerZoneSet.from_json(set.to_json())
 
 	_check(parsed.ok, "a zone set round-trips through JSON",
 		parsed.error.message if not parsed.ok else "")
@@ -74,7 +74,7 @@ func _test_zone_set_round_trip() -> void:
 	if not parsed.ok:
 		return
 
-	var back: DotTimerZoneSet = parsed.value
+	var back: GSTimerZoneSet = parsed.value
 
 	_check(back.zones.size() == set.zones.size(), "with every zone")
 	_check(back.map_id == set.map_id, "and the map id")
@@ -103,7 +103,7 @@ func _test_zone_set_round_trip() -> void:
 		"but moving the finish line does"
 	)
 
-	var newer := DotTimerZoneSet.from_dictionary({"format": 999, "zones": []})
+	var newer := GSTimerZoneSet.from_dictionary({"format": 999, "zones": []})
 	_check(not newer.ok, "a file from a newer format is refused")
 	_done()
 
@@ -112,14 +112,14 @@ func _test_zone_index() -> void:
 	_section("the zone index")
 
 	var set := _corridor()
-	var index := DotTimerZoneIndex.of(set)
+	var index := GSTimerZoneIndex.of(set)
 
-	var found: Array[DotTimerZone] = []
+	var found: Array[GSTimerZone] = []
 
 	index.zones_at(Vector3(2.0, 0.0, 0.0), found)
 	_check(found.size() == 1, "a point in the start finds one zone", str(found.size()))
 	_check(
-		found.size() == 1 and found[0].kind == DotTimerZone.Kind.START,
+		found.size() == 1 and found[0].kind == GSTimerZone.Kind.START,
 		"and it is the start"
 	)
 
@@ -128,19 +128,19 @@ func _test_zone_index() -> void:
 
 	index.zones_at(Vector3(98.0, 0.0, 0.0), found)
 	_check(
-		found.size() == 1 and found[0].kind == DotTimerZone.Kind.END,
+		found.size() == 1 and found[0].kind == GSTimerZone.Kind.END,
 		"and a point in the finish finds the finish"
 	)
 
 	# A map-wide volume goes on the "always test" list rather than into a hundred
 	# thousand cells.
 	var wide := _corridor()
-	var gravity := DotTimerZone.make(DotTimerZone.Kind.GRAVITY)
+	var gravity := GSTimerZone.make(GSTimerZone.Kind.GRAVITY)
 	gravity.number = 0.5
 	gravity.set_box(Vector3(-5000.0, -5000.0, -5000.0), Vector3(5000.0, 5000.0, 5000.0))
 	wide.add(gravity)
 
-	var wide_index := DotTimerZoneIndex.of(wide)
+	var wide_index := GSTimerZoneIndex.of(wide)
 	wide_index.zones_at(Vector3(50.0, 0.0, 0.0), found)
 
 	_check(found.size() == 1, "a map-wide zone is still found in open space")
@@ -154,16 +154,16 @@ func _test_zone_index() -> void:
 func _test_checkpoints() -> void:
 	_section("practice checkpoints")
 
-	var style := DotTimerStyle.new()
+	var style := GSTimerStyle.new()
 	style.minimum_time = 0.0
 	style.allow_checkpoints = true
 
-	var timer := DotTimer.new()
+	var timer := GSTimer.new()
 	timer.authoritative = true
 	timer.bind(_corridor(), 128)
 	timer.style = style
 
-	var sample := DotTimerSample.new()
+	var sample := GSTimerSample.new()
 	sample.grounded = true
 
 	for i in range(1400):
@@ -186,12 +186,12 @@ func _test_checkpoints() -> void:
 	# than timing four more minutes that can never be filed.
 	style.allow_checkpoints = false
 
-	var strict := DotTimer.new()
+	var strict := GSTimer.new()
 	strict.authoritative = true
 	strict.bind(_corridor(), 128)
 	strict.style = style
 
-	var sample2 := DotTimerSample.new()
+	var sample2 := GSTimerSample.new()
 	sample2.grounded = true
 
 	for i in range(400):
@@ -215,22 +215,22 @@ func _test_effect_zones() -> void:
 
 	var set := _corridor()
 
-	var gravity := DotTimerZone.make(DotTimerZone.Kind.GRAVITY)
+	var gravity := GSTimerZone.make(GSTimerZone.Kind.GRAVITY)
 	gravity.number = 0.4
 	gravity.set_box(Vector3(20.0, -2.0, -4.0), Vector3(40.0, 8.0, 4.0))
 	set.add(gravity)
 
-	var no_jump := DotTimerZone.make(DotTimerZone.Kind.NO_JUMP)
+	var no_jump := GSTimerZone.make(GSTimerZone.Kind.NO_JUMP)
 	no_jump.set_box(Vector3(60.0, -2.0, -4.0), Vector3(70.0, 8.0, 4.0))
 	set.add(no_jump)
 
-	var timer := DotTimer.new()
+	var timer := GSTimer.new()
 	timer.bind(set, 128)
 
 	var changes := [0]
 	timer.effects_changed.connect(func() -> void: changes[0] += 1)
 
-	var sample := DotTimerSample.new()
+	var sample := GSTimerSample.new()
 	sample.grounded = true
 
 	var seen_gravity := false
@@ -242,12 +242,12 @@ func _test_effect_zones() -> void:
 		sample.velocity = Vector3(12.8, 0.0, 0.0)
 		timer.tick(sample)
 
-		if timer.is_inside(DotTimerZone.Kind.GRAVITY):
+		if timer.is_inside(GSTimerZone.Kind.GRAVITY):
 			seen_gravity = true
-			if timer.is_inside(DotTimerZone.Kind.NO_JUMP):
+			if timer.is_inside(GSTimerZone.Kind.NO_JUMP):
 				both_at_once = true
 
-		if timer.is_inside(DotTimerZone.Kind.NO_JUMP):
+		if timer.is_inside(GSTimerZone.Kind.NO_JUMP):
 			seen_no_jump = true
 
 	_check(seen_gravity, "the gravity zone comes into force")
@@ -265,7 +265,7 @@ func _test_rules() -> void:
 	_section("velocity rules")
 
 	var fast := Vector3(30.0, -10.0, 40.0)
-	var clamped := DotTimerRules.clamp_prespeed(fast, 25.0)
+	var clamped := GSTimerRules.clamp_prespeed(fast, 25.0)
 
 	_check_near(
 		Vector2(clamped.x, clamped.z).length(), 25.0, 0.001,
@@ -277,37 +277,37 @@ func _test_rules() -> void:
 	)
 
 	_check(
-		DotTimerRules.clamp_prespeed(fast, 0.0) == fast,
+		GSTimerRules.clamp_prespeed(fast, 0.0) == fast,
 		"a limit of zero does nothing"
 	)
 	_check(
-		DotTimerRules.clamp_prespeed(Vector3(1.0, 0.0, 0.0), 25.0)
+		GSTimerRules.clamp_prespeed(Vector3(1.0, 0.0, 0.0), 25.0)
 			== Vector3(1.0, 0.0, 0.0),
 		"and a slow player is untouched"
 	)
 
-	var flat := DotTimerRules.clamp_prespeed_2d(Vector3(30.0, 40.0, 7.0), 25.0)
+	var flat := GSTimerRules.clamp_prespeed_2d(Vector3(30.0, 40.0, 7.0), 25.0)
 	_check_near(
 		Vector2(flat.x, flat.y).length(), 25.0, 0.001,
 		"the 2D form caps the XY plane instead"
 	)
 
-	var push_zone := DotTimerZone.make(DotTimerZone.Kind.PUSH)
+	var push_zone := GSTimerZone.make(GSTimerZone.Kind.PUSH)
 	push_zone.direction = Vector3(0.0, 100.0, 0.0)
 
-	var pushed := DotTimerRules.apply_push(Vector3.ZERO, push_zone, 1.0 / 128.0)
+	var pushed := GSTimerRules.apply_push(Vector3.ZERO, push_zone, 1.0 / 128.0)
 	_check_near(pushed.y, 100.0 / 128.0, 0.0001, "a push adds acceleration for a tick")
 
 	_check(
-		DotTimerRules.may_start(true, true, false),
+		GSTimerRules.may_start(true, true, false),
 		"a grounded living player may start"
 	)
 	_check(
-		not DotTimerRules.may_start(false, true, false),
+		not GSTimerRules.may_start(false, true, false),
 		"an airborne one may not, unless the style allows it"
 	)
 	_check(
-		not DotTimerRules.may_start(true, false, true),
+		not GSTimerRules.may_start(true, false, true),
 		"and a dead one never may"
 	)
 	_done()
@@ -316,7 +316,7 @@ func _test_rules() -> void:
 func _test_points() -> void:
 	_section("ranking points")
 
-	var style := DotTimerStyle.new()
+	var style := GSTimerStyle.new()
 
 	var tier1 := style.points_for(60.0, 1, 60.0)
 	var tier10 := style.points_for(60.0, 10, 60.0)
@@ -351,11 +351,11 @@ func _test_points() -> void:
 	)
 
 	_check_near(
-		style.minimum_time_for(DotTimerTrack.MAIN), 3.5, 0.001,
+		style.minimum_time_for(GSTimerTrack.MAIN), 3.5, 0.001,
 		"the main-track floor is the long one"
 	)
 	_check_near(
-		style.minimum_time_for(DotTimerTrack.of_bonus(1)), 0.5, 0.001,
+		style.minimum_time_for(GSTimerTrack.of_bonus(1)), 0.5, 0.001,
 		"and a bonus has its own"
 	)
 	_done()
@@ -364,24 +364,24 @@ func _test_points() -> void:
 func _test_time_formatting() -> void:
 	_section("time formatting")
 
-	_check(DotTimerRun.format_time(0.0) == "0:00.000", "zero")
-	_check(DotTimerRun.format_time(9.2) == "0:09.200", "under a minute")
-	_check(DotTimerRun.format_time(83.456) == "1:23.456", "over a minute")
-	_check(DotTimerRun.format_time(3723.5) == "1:02:03.500", "over an hour")
+	_check(GSTimerRun.format_time(0.0) == "0:00.000", "zero")
+	_check(GSTimerRun.format_time(9.2) == "0:09.200", "under a minute")
+	_check(GSTimerRun.format_time(83.456) == "1:23.456", "over a minute")
+	_check(GSTimerRun.format_time(3723.5) == "1:02:03.500", "over an hour")
 
 	_check(
-		DotTimerRun.format_time(-1.25, true) == "-0:01.250",
+		GSTimerRun.format_time(-1.25, true) == "-0:01.250",
 		"a negative split reads as ahead"
 	)
 	_check(
-		DotTimerRun.format_time(1.25, true) == "+0:01.250",
+		GSTimerRun.format_time(1.25, true) == "+0:01.250",
 		"and a positive one as behind"
 	)
 
 	# Three decimals, always: these leaderboards are decided by thousandths, and a
 	# display that rounded to two would make ties out of runs that were not tied.
 	_check(
-		DotTimerRun.format_time(9.2001) != DotTimerRun.format_time(9.2011),
+		GSTimerRun.format_time(9.2001) != GSTimerRun.format_time(9.2011),
 		"a millisecond is visible"
 	)
 	_done()

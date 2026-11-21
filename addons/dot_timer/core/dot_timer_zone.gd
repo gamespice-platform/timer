@@ -1,5 +1,5 @@
 @tool
-class_name DotTimerZone
+class_name GSTimerZone
 extends Resource
 
 ## One volume in a map that the timer reacts to: a start line, a finish, a stage split, a teleport, a speed limit.
@@ -8,7 +8,7 @@ extends Resource
 ## What the timer does about a zone. A superset of what the timer handles itself: other kinds are reported to the host, not dropped.
 ## Numbering follows the community timers' where kinds correspond; renumbering silently corrupts traded zone files.
 enum Kind {
-	## Starts the run. Timing begins as the player LEAVES it — see [DotTimer].
+	## Starts the run. Timing begins as the player LEAVES it — see [GSTimer].
 	START,
 	## Ends the run.
 	END,
@@ -50,7 +50,7 @@ enum Kind {
 	## Appended, never inserted: a re-numbering silently corrupts files that kept the integer.
 	VALIDATOR,
 	## A point a skip would reach: entering it without having passed its [constant VALIDATOR] (same [member number]) disqualifies the run
-	## and asks the host to send the player to the track's spawn ([signal DotTimer.effect_requested]).
+	## and asks the host to send the player to the track's spawn ([signal GSTimer.effect_requested]).
 	CHECKER,
 }
 
@@ -69,8 +69,8 @@ const POINT_KINDS: Array[Kind] = [Kind.SPAWN]
 
 @export var kind: Kind = Kind.START
 
-## Which track this zone belongs to. See [DotTimerTrack].
-@export_range(0, 8, 1, "or_greater") var track: int = DotTimerTrack.MAIN
+## Which track this zone belongs to. See [GSTimerTrack].
+@export_range(0, 8, 1, "or_greater") var track: int = GSTimerTrack.MAIN
 
 @export var shape: Shape = Shape.BOX
 
@@ -101,27 +101,27 @@ const POINT_KINDS: Array[Kind] = [Kind.SPAWN]
 ## A mapper's note. Never read by anything.
 @export var comment: String = ""
 
-## Stable id within a [DotTimerZoneSet], assigned by the set.
+## Stable id within a [GSTimerZoneSet], assigned by the set.
 ## Records name stages by number, not this; a replay's crossing marks and an editor's "delete that one" need a zone that has not moved.
 @export var id: int = 0
 
 
-static func make(p_kind: Kind, p_track: int = DotTimerTrack.MAIN) -> DotTimerZone:
-	var zone := DotTimerZone.new()
+static func make(p_kind: Kind, p_track: int = GSTimerTrack.MAIN) -> GSTimerZone:
+	var zone := GSTimerZone.new()
 	zone.kind = p_kind
 	zone.track = p_track
 	return zone
 
 
 ## Sets a box from any two opposite corners, in either order.
-func set_box(a: Vector3, b: Vector3) -> DotTimerZone:
+func set_box(a: Vector3, b: Vector3) -> GSTimerZone:
 	shape = Shape.BOX
 	from = Vector3(minf(a.x, b.x), minf(a.y, b.y), minf(a.z, b.z))
 	to = Vector3(maxf(a.x, b.x), maxf(a.y, b.y), maxf(a.z, b.z))
 	return self
 
 
-func set_sphere(centre: Vector3, radius: float) -> DotTimerZone:
+func set_sphere(centre: Vector3, radius: float) -> GSTimerZone:
 	shape = Shape.SPHERE
 	from = centre
 	number = absf(radius)
@@ -130,7 +130,7 @@ func set_sphere(centre: Vector3, radius: float) -> DotTimerZone:
 
 ## Makes the box unbounded on the Z axis, for a 2D game.
 ## A zero-thickness third axis contains nothing, the most likely way to draw a 2D zone that never fires.
-func flatten_for_2d() -> DotTimerZone:
+func flatten_for_2d() -> GSTimerZone:
 	from.z = -1e9
 	to.z = 1e9
 	return self
@@ -167,7 +167,7 @@ func contains(point: Vector3) -> bool:
 
 
 ## Distance from [param point] to the surface. Negative inside.
-## The sub-tick crossing time is computed from this; see [method DotTimer._crossing_fraction].
+## The sub-tick crossing time is computed from this; see [method GSTimer._crossing_fraction].
 func signed_distance(point: Vector3) -> float:
 	if shape == Shape.SPHERE:
 		return point.distance_to(from) - number
@@ -206,41 +206,41 @@ func is_thin_for(horizontal_per_tick: float, vertical_per_tick: float) -> bool:
 	return minf(s.x, s.z) < horizontal_per_tick or s.y < vertical_per_tick
 
 
-func validate() -> DotResult:
-	if not DotTimerTrack.is_valid(track):
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+func validate() -> GSResult:
+	if not GSTimerTrack.is_valid(track):
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"A zone's track must be 0 or more.",
 			"track %d" % track
 		)
 
 	if is_point_kind():
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	if shape == Shape.SPHERE:
 		if number <= 0.0:
-			return DotResult.fail(
-				DotError.CODE_INVALID,
+			return GSResult.fail(
+				GSError.CODE_INVALID,
 				"A spherical zone needs a positive radius.",
 				"radius %.3f" % number
 			)
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	if to.x <= from.x or to.y <= from.y or to.z <= from.z:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"A box zone needs a positive size on every axis.",
 			"%s .. %s" % [str(from), str(to)]
 		)
 
 	if kind == Kind.STAGE and int(number) < 1:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"A stage zone's number is the stage, counted from 1.",
 			"number %.1f" % number
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 
@@ -280,8 +280,8 @@ static func _vector(value: Variant, fallback: Vector3 = Vector3.ZERO) -> Vector3
 	return fallback
 
 
-static func from_dictionary(data: Dictionary) -> DotTimerZone:
-	var zone := DotTimerZone.new()
+static func from_dictionary(data: Dictionary) -> GSTimerZone:
+	var zone := GSTimerZone.new()
 
 	zone.id = int(data.get("id", 0))
 	zone.kind = _to_kind(data.get("kind", Kind.START))
@@ -319,8 +319,8 @@ static func _to_shape(value: Variant) -> Shape:
 	return Shape.SPHERE if int(value) == Shape.SPHERE else Shape.BOX
 
 
-func duplicate_zone() -> DotTimerZone:
-	return DotTimerZone.from_dictionary(to_dictionary())
+func duplicate_zone() -> GSTimerZone:
+	return GSTimerZone.from_dictionary(to_dictionary())
 
 
 static func kind_name(k: Kind) -> String:
@@ -331,7 +331,7 @@ func describe() -> Dictionary:
 	return {
 		"id": id,
 		"kind": kind_name(kind),
-		"track": DotTimerTrack.short_name_of(track),
+		"track": GSTimerTrack.short_name_of(track),
 		"shape": Shape.keys()[shape],
 		"centre": "(%.1f, %.1f, %.1f)" % [centre().x, centre().y, centre().z],
 		"size": "(%.1f, %.1f, %.1f)" % [size().x, size().y, size().z],
@@ -340,6 +340,6 @@ func describe() -> Dictionary:
 
 
 func _to_string() -> String:
-	return "DotTimerZone(%s %s #%d)" % [
-		kind_name(kind), DotTimerTrack.short_name_of(track), id
+	return "GSTimerZone(%s %s #%d)" % [
+		kind_name(kind), GSTimerTrack.short_name_of(track), id
 	]

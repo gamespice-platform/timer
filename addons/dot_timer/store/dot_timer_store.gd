@@ -1,11 +1,11 @@
-class_name DotTimerStore
+class_name GSTimerStore
 extends RefCounted
 
 ## Where records live. Subclass to put them somewhere else.
 ## Await every call, even where it is not needed (except the two [code]peek_[/code] methods, which a HUD reads synchronously); a store never decides whether a record is allowed.
 
 # No log channel: an abstract interface. Every implementation logs its own trouble, and
-# a failed put() is logged by DotTimerManager._file, its one caller.
+# a failed put() is logged by GSTimerManager._file, its one caller.
 
 ## How many entries [method recent] may hold. Older entries fall off.
 const HISTORY_LIMIT := 2000
@@ -14,7 +14,7 @@ const HISTORY_LIMIT := 2000
 
 ## Files a finish. Returns a [Dictionary] with [code]previous[/code], [code]improved[/code], [code]previous_record[/code] and [code]completions[/code].
 ## Every finish is counted, kept or not: only the store sees them all. An improvement also goes to the history [method recent] reads.
-func put(_record: DotTimerRecord) -> DotResult:
+func put(_record: GSTimerRecord) -> GSResult:
 	return _unsupported("put")
 
 
@@ -22,7 +22,7 @@ func put(_record: DotTimerRecord) -> DotResult:
 func top(
 	_map_id: StringName, _track: int, _style_id: StringName,
 	_limit: int = 10, _offset: int = 0, _stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("top")
 
 
@@ -31,7 +31,7 @@ func top(
 func best_for(
 	_map_id: StringName, _track: int, _style_id: StringName,
 	_player_id: StringName, _stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("best_for")
 
 
@@ -39,7 +39,7 @@ func best_for(
 func rank_of(
 	_map_id: StringName, _track: int, _style_id: StringName,
 	_player_id: StringName, _stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("rank_of")
 
 
@@ -48,14 +48,14 @@ func rank_of(
 func rank_for_time(
 	_map_id: StringName, _track: int, _style_id: StringName,
 	_time: float, _stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("rank_for_time")
 
 
 ## How many players have a time on a board.
 func count_on(
 	_map_id: StringName, _track: int, _style_id: StringName, _stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("count_on")
 
 
@@ -63,39 +63,39 @@ func count_on(
 func remove(
 	_map_id: StringName, _track: int, _style_id: StringName,
 	_player_id: StringName, _stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("remove")
 
 
 ## Rewrites the points on records already filed — a re-score after the record on their
-## board changed. Only [member DotTimerRecord.points] is written; the key fields find
+## board changed. Only [member GSTimerRecord.points] is written; the key fields find
 ## the row. Success carries how many were updated.
-func set_points(_records: Array) -> DotResult:
+func set_points(_records: Array) -> GSResult:
 	return _unsupported("set_points")
 
 
 ## Every whole-run record one player holds, on every board, for a profile, a "maps
 ## done" list and a points total. [param filter] may carry [code]style[/code],
 ## [code]track[/code] and [code]stage[/code] (default 0; -1 for every section too).
-func records_of(_player_id: StringName, _filter: Dictionary = {}) -> DotResult:
+func records_of(_player_id: StringName, _filter: Dictionary = {}) -> GSResult:
 	return _unsupported("records_of")
 
 
 ## Every record on every board of [param map_id] — what a re-score walks when a map's
 ## tier changes. Whole runs and sections alike.
-func records_on_map(_map_id: StringName) -> DotResult:
+func records_on_map(_map_id: StringName) -> GSResult:
 	return _unsupported("records_on_map")
 
 
 ## How many whole-run boards [param player_id] holds rank 1 on. A tie for first counts.
 ## [param filter] as for [method records_of]; [code]stage[/code] -1 counts section records too.
-func record_count(_player_id: StringName, _filter: Dictionary = {}) -> DotResult:
+func record_count(_player_id: StringName, _filter: Dictionary = {}) -> GSResult:
 	return _unsupported("record_count")
 
 
 ## The latest improvements, newest first: [code]{record, previous_time, previous_record_time, was_record}[/code] dictionaries.
 ## [param filter] may carry map, track, style, stage and [code]records_only[/code] (default true). A history, not a view: a record since beaten still lists.
-func recent(_limit: int = 20, _filter: Dictionary = {}) -> DotResult:
+func recent(_limit: int = 20, _filter: Dictionary = {}) -> GSResult:
 	return _unsupported("recent")
 
 
@@ -103,17 +103,17 @@ func recent(_limit: int = 20, _filter: Dictionary = {}) -> DotResult:
 ## Success carries how many went.
 func wipe_board(
 	_map_id: StringName, _track: int, _style_id: StringName, _stage: int = -1
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("wipe_board")
 
 
 ## Deletes every record, history entry, progress row and saved run of one player.
-func wipe_player(_player_id: StringName) -> DotResult:
+func wipe_player(_player_id: StringName) -> GSResult:
 	return _unsupported("wipe_player")
 
 
 ## Deletes everything filed on one map.
-func wipe_map(_map_id: StringName) -> DotResult:
+func wipe_map(_map_id: StringName) -> GSResult:
 	return _unsupported("wipe_map")
 
 
@@ -121,13 +121,13 @@ func wipe_map(_map_id: StringName) -> DotResult:
 ## Notes that a player was here: their current name, when, and play time to add.
 func note_player(
 	_player_id: StringName, _name: String, _seen_at: int, _playtime_add: float = 0.0
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("note_player")
 
 
 ## A player's row, or a success carrying null:
 ## [code]{player, name, points, first_seen, last_seen, playtime}[/code].
-func player_info(_player_id: StringName) -> DotResult:
+func player_info(_player_id: StringName) -> GSResult:
 	return _unsupported("player_info")
 
 
@@ -135,34 +135,34 @@ func player_info(_player_id: StringName) -> DotResult:
 ## Total is [code]sum(points[i] * weighting^i)[/code], best first; 1.0 is a plain sum. [param limit] caps how many count, 0 = all.
 func refresh_player_points(
 	_player_ids: Array, _weighting: float = 1.0, _limit: int = 0
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("refresh_player_points")
 
 
 ## The players with the most points, best first:
 ## [code]{player, name, points, rank}[/code] each.
-func top_players(_limit: int = 10, _offset: int = 0) -> DotResult:
+func top_players(_limit: int = 10, _offset: int = 0) -> GSResult:
 	return _unsupported("top_players")
 
 
 ## [code]{rank, total, points}[/code] for one player. Rank 0 with no points.
-func player_rank(_player_id: StringName) -> DotResult:
+func player_rank(_player_id: StringName) -> GSResult:
 	return _unsupported("player_rank")
 
 
 
 ## Records what a map is: [code]{map, tier, stages, bonuses, ranked, mapper, info}[/code].
 ## Upserted — a map's zones being reloaded is the normal way this is called.
-func put_map(_info: Dictionary) -> DotResult:
+func put_map(_info: Dictionary) -> GSResult:
 	return _unsupported("put_map")
 
 
-func map_info(_map_id: StringName) -> DotResult:
+func map_info(_map_id: StringName) -> GSResult:
 	return _unsupported("map_info")
 
 
 ## Every map this store knows, by id.
-func maps() -> DotResult:
+func maps() -> GSResult:
 	return _unsupported("maps")
 
 
@@ -172,7 +172,7 @@ func maps() -> DotResult:
 func note_progress(
 	_player_id: StringName, _map_id: StringName, _track: int, _style_id: StringName,
 	_attempts: int, _seconds: float, _finished: bool
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("note_progress")
 
 
@@ -180,18 +180,18 @@ func note_progress(
 ## success carrying null. [code]time_to_first[/code] is -1 until the first finish.
 func progress_for(
 	_player_id: StringName, _map_id: StringName, _track: int, _style_id: StringName
-) -> DotResult:
+) -> GSResult:
 	return _unsupported("progress_for")
 
 
 
 ## Keeps a run in progress for a player who dropped, to give back when they return.
-func save_resume(_player_id: StringName, _map_id: StringName, _state: Dictionary) -> DotResult:
+func save_resume(_player_id: StringName, _map_id: StringName, _state: Dictionary) -> GSResult:
 	return _unsupported("save_resume")
 
 
 ## Takes a saved run back — and forgets it, so it can be used once. Null when none.
-func take_resume(_player_id: StringName, _map_id: StringName) -> DotResult:
+func take_resume(_player_id: StringName, _map_id: StringName) -> GSResult:
 	return _unsupported("take_resume")
 
 
@@ -215,8 +215,8 @@ func peek_best(
 
 
 ## Writes anything held back. The file store batches; the others write as they go.
-func flush() -> DotResult:
-	return DotResult.success(0)
+func flush() -> GSResult:
+	return GSResult.success(0)
 
 
 func describe() -> Dictionary:
@@ -227,7 +227,7 @@ func describe() -> Dictionary:
 	}
 
 
-func _unsupported(method: String) -> DotResult:
-	return DotResult.fail(
-		DotError.CODE_UNSUPPORTED, "DotTimerStore.%s() was not overridden." % method
+func _unsupported(method: String) -> GSResult:
+	return GSResult.fail(
+		GSError.CODE_UNSUPPORTED, "GSTimerStore.%s() was not overridden." % method
 	)

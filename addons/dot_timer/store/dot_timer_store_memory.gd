@@ -1,5 +1,5 @@
-class_name DotTimerStoreMemory
-extends DotTimerStore
+class_name GSTimerStoreMemory
+extends GSTimerStore
 
 ## Records in dictionaries. For tests, a scratch server, and as the reference implementation of the interface.
 ## The board index is kept sorted on write, not on read: boards are read far more often than written.
@@ -10,7 +10,7 @@ var _rows: Dictionary = {}
 ## board key -> sorted array of records, fastest first.
 var _boards: Dictionary = {}
 
-## Newest last. Bounded by [constant DotTimerStore.HISTORY_LIMIT].
+## Newest last. Bounded by [constant GSTimerStore.HISTORY_LIMIT].
 var _history: Array[Dictionary] = []
 
 ## player id -> {player, name, points, first_seen, last_seen, playtime}.
@@ -29,13 +29,13 @@ var _resume: Dictionary = {}
 static func _key(
 	map_id: StringName, track: int, style_id: StringName, stage: int = 0
 ) -> String:
-	return DotTimerRecord.board_key_of(map_id, track, style_id, stage)
+	return GSTimerRecord.board_key_of(map_id, track, style_id, stage)
 
 
 
-func put(record: DotTimerRecord) -> DotResult:
+func put(record: GSTimerRecord) -> GSResult:
 	if record == null:
-		return DotResult.fail(DotError.CODE_INVALID, "No record to store.")
+		return GSResult.fail(GSError.CODE_INVALID, "No record to store.")
 
 	var board := record.board_key()
 
@@ -47,8 +47,8 @@ func put(record: DotTimerRecord) -> DotResult:
 	var board_rows: Array = _boards[board]
 
 	var previous_value: Variant = by_player.get(record.player_id)
-	var previous: DotTimerRecord = previous_value if previous_value is DotTimerRecord else null
-	var leader: DotTimerRecord = board_rows[0] if not board_rows.is_empty() else null
+	var previous: GSTimerRecord = previous_value if previous_value is GSTimerRecord else null
+	var leader: GSTimerRecord = board_rows[0] if not board_rows.is_empty() else null
 
 	var completions := (previous.completions if previous != null else 0) + 1
 
@@ -56,7 +56,7 @@ func put(record: DotTimerRecord) -> DotResult:
 		# Not an error. Most finished runs are slower than the player's own best; the
 		# row stays and only its count moves.
 		previous.completions = completions
-		return DotResult.success(_put_result(previous, false, leader, completions))
+		return GSResult.success(_put_result(previous, false, leader, completions))
 
 	# Copied in, so a caller that keeps the record it filed cannot change the stored one.
 	var stored := record.duplicate_record()
@@ -68,15 +68,15 @@ func put(record: DotTimerRecord) -> DotResult:
 		board_rows.erase(previous)
 
 	board_rows.append(stored)
-	DotTimerRecord.sort_fastest_first(board_rows)
+	GSTimerRecord.sort_fastest_first(board_rows)
 
 	_remember(stored, previous, leader)
 
-	return DotResult.success(_put_result(previous, true, leader, completions))
+	return GSResult.success(_put_result(previous, true, leader, completions))
 
 
 func _put_result(
-	previous: DotTimerRecord, improved: bool, leader: DotTimerRecord, completions: int
+	previous: GSTimerRecord, improved: bool, leader: GSTimerRecord, completions: int
 ) -> Dictionary:
 	return {
 		"previous": previous.duplicate_record() if previous != null else null,
@@ -87,7 +87,7 @@ func _put_result(
 
 
 func _remember(
-	stored: DotTimerRecord, previous: DotTimerRecord, leader: DotTimerRecord
+	stored: GSTimerRecord, previous: GSTimerRecord, leader: GSTimerRecord
 ) -> void:
 	_history.append({
 		"record": stored.duplicate_record(),
@@ -103,43 +103,43 @@ func _remember(
 func top(
 	map_id: StringName, track: int, style_id: StringName,
 	limit: int = 10, offset: int = 0, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	var rows := _board(map_id, track, style_id, stage)
-	var out: Array[DotTimerRecord] = []
+	var out: Array[GSTimerRecord] = []
 
 	for i in range(maxi(offset, 0), mini(offset + limit, rows.size())):
-		out.append((rows[i] as DotTimerRecord).duplicate_record())
+		out.append((rows[i] as GSTimerRecord).duplicate_record())
 
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
 func best_for(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	var found: Variant = _row(map_id, track, style_id, player_id, stage)
-	return DotResult.success(
-		(found as DotTimerRecord).duplicate_record() if found is DotTimerRecord else null
+	return GSResult.success(
+		(found as GSTimerRecord).duplicate_record() if found is GSTimerRecord else null
 	)
 
 
 func rank_of(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	var found: Variant = _row(map_id, track, style_id, player_id, stage)
 
-	if not (found is DotTimerRecord):
-		return DotResult.success(0)
+	if not (found is GSTimerRecord):
+		return GSResult.success(0)
 
-	return DotResult.success(_faster_than(map_id, track, style_id, (found as DotTimerRecord).time, stage) + 1)
+	return GSResult.success(_faster_than(map_id, track, style_id, (found as GSTimerRecord).time, stage) + 1)
 
 
 func rank_for_time(
 	map_id: StringName, track: int, style_id: StringName,
 	time: float, stage: int = 0
-) -> DotResult:
-	return DotResult.success(_faster_than(map_id, track, style_id, time, stage) + 1)
+) -> GSResult:
+	return GSResult.success(_faster_than(map_id, track, style_id, time, stage) + 1)
 
 
 func _faster_than(
@@ -147,7 +147,7 @@ func _faster_than(
 ) -> int:
 	var count := 0
 	for record in _board(map_id, track, style_id, stage):
-		if (record as DotTimerRecord).time < time:
+		if (record as GSTimerRecord).time < time:
 			count += 1
 		else:
 			break
@@ -156,76 +156,76 @@ func _faster_than(
 
 func count_on(
 	map_id: StringName, track: int, style_id: StringName, stage: int = 0
-) -> DotResult:
-	return DotResult.success(_board(map_id, track, style_id, stage).size())
+) -> GSResult:
+	return GSResult.success(_board(map_id, track, style_id, stage).size())
 
 
 func remove(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	var board := _key(map_id, track, style_id, stage)
 	var by_player: Dictionary = _rows.get(board, {})
 	var found: Variant = by_player.get(player_id)
 
-	if not (found is DotTimerRecord):
-		return DotResult.success(false)
+	if not (found is GSTimerRecord):
+		return GSResult.success(false)
 
 	by_player.erase(player_id)
 	(_boards[board] as Array).erase(found)
 
-	return DotResult.success(true)
+	return GSResult.success(true)
 
 
-func set_points(records: Array) -> DotResult:
+func set_points(records: Array) -> GSResult:
 	var updated := 0
 	for record in records:
-		if not (record is DotTimerRecord):
+		if not (record is GSTimerRecord):
 			continue
 		var found: Variant = _row(
 			record.map_id, record.track, record.style_id, record.player_id, record.stage
 		)
-		if found is DotTimerRecord:
-			(found as DotTimerRecord).points = (record as DotTimerRecord).points
+		if found is GSTimerRecord:
+			(found as GSTimerRecord).points = (record as GSTimerRecord).points
 			updated += 1
-	return DotResult.success(updated)
+	return GSResult.success(updated)
 
 
-func records_of(player_id: StringName, filter: Dictionary = {}) -> DotResult:
-	var out: Array[DotTimerRecord] = []
+func records_of(player_id: StringName, filter: Dictionary = {}) -> GSResult:
+	var out: Array[GSTimerRecord] = []
 	for board in _rows:
 		var found: Variant = (_rows[board] as Dictionary).get(player_id)
-		if found is DotTimerRecord and _matches(found, filter):
-			out.append((found as DotTimerRecord).duplicate_record())
-	return DotResult.success(out)
+		if found is GSTimerRecord and _matches(found, filter):
+			out.append((found as GSTimerRecord).duplicate_record())
+	return GSResult.success(out)
 
 
-func records_on_map(map_id: StringName) -> DotResult:
-	var out: Array[DotTimerRecord] = []
+func records_on_map(map_id: StringName) -> GSResult:
+	var out: Array[GSTimerRecord] = []
 	for board in _boards:
 		for record in (_boards[board] as Array):
-			if (record as DotTimerRecord).map_id == map_id:
-				out.append((record as DotTimerRecord).duplicate_record())
-	return DotResult.success(out)
+			if (record as GSTimerRecord).map_id == map_id:
+				out.append((record as GSTimerRecord).duplicate_record())
+	return GSResult.success(out)
 
 
-func record_count(player_id: StringName, filter: Dictionary = {}) -> DotResult:
+func record_count(player_id: StringName, filter: Dictionary = {}) -> GSResult:
 	var count := 0
 	for board in _boards:
 		var rows: Array = _boards[board]
 		if rows.is_empty() or not _matches(rows[0], filter):
 			continue
-		var best_time: float = (rows[0] as DotTimerRecord).time
+		var best_time: float = (rows[0] as GSTimerRecord).time
 		for record in rows:
-			if (record as DotTimerRecord).time > best_time:
+			if (record as GSTimerRecord).time > best_time:
 				break
-			if (record as DotTimerRecord).player_id == player_id:
+			if (record as GSTimerRecord).player_id == player_id:
 				count += 1
 				break
-	return DotResult.success(count)
+	return GSResult.success(count)
 
 
-func recent(limit: int = 20, filter: Dictionary = {}) -> DotResult:
+func recent(limit: int = 20, filter: Dictionary = {}) -> GSResult:
 	var records_only := bool(filter.get("records_only", true))
 	var out: Array[Dictionary] = []
 	for i in range(_history.size() - 1, -1, -1):
@@ -237,13 +237,13 @@ func recent(limit: int = 20, filter: Dictionary = {}) -> DotResult:
 		if not _matches(entry["record"], filter):
 			continue
 		var copy := entry.duplicate()
-		copy["record"] = (entry["record"] as DotTimerRecord).duplicate_record()
+		copy["record"] = (entry["record"] as GSTimerRecord).duplicate_record()
 		out.append(copy)
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
 ## Whether a record passes a [method records_of] / [method recent] filter.
-static func _matches(record: DotTimerRecord, filter: Dictionary) -> bool:
+static func _matches(record: GSTimerRecord, filter: Dictionary) -> bool:
 	if filter.has("map") and record.map_id != StringName(str(filter["map"])):
 		return false
 	if filter.has("track") and record.track != int(filter["track"]):
@@ -258,13 +258,13 @@ static func _matches(record: DotTimerRecord, filter: Dictionary) -> bool:
 
 func wipe_board(
 	map_id: StringName, track: int, style_id: StringName, stage: int = -1
-) -> DotResult:
+) -> GSResult:
 	var removed := 0
 	for board in _boards.keys():
 		var rows: Array = _boards[board]
 		if rows.is_empty():
 			continue
-		var sample: DotTimerRecord = rows[0]
+		var sample: GSTimerRecord = rows[0]
 		if sample.map_id != map_id or sample.track != track or sample.style_id != style_id:
 			continue
 		if stage >= 0 and sample.stage != stage:
@@ -272,20 +272,20 @@ func wipe_board(
 		removed += rows.size()
 		_boards.erase(board)
 		_rows.erase(board)
-	return DotResult.success(removed)
+	return GSResult.success(removed)
 
 
-func wipe_player(player_id: StringName) -> DotResult:
+func wipe_player(player_id: StringName) -> GSResult:
 	var removed := 0
 	for board in _rows:
 		var by_player: Dictionary = _rows[board]
 		var found: Variant = by_player.get(player_id)
-		if found is DotTimerRecord:
+		if found is GSTimerRecord:
 			by_player.erase(player_id)
 			(_boards[board] as Array).erase(found)
 			removed += 1
 	_history = _history.filter(
-		func(e: Dictionary) -> bool: return (e["record"] as DotTimerRecord).player_id != player_id
+		func(e: Dictionary) -> bool: return (e["record"] as GSTimerRecord).player_id != player_id
 	)
 	_players.erase(player_id)
 	for key in _progress.keys():
@@ -294,31 +294,31 @@ func wipe_player(player_id: StringName) -> DotResult:
 	for key in _resume.keys():
 		if String(key).begins_with(String(player_id) + "|"):
 			_resume.erase(key)
-	return DotResult.success(removed)
+	return GSResult.success(removed)
 
 
-func wipe_map(map_id: StringName) -> DotResult:
+func wipe_map(map_id: StringName) -> GSResult:
 	var removed := 0
 	for board in _boards.keys():
 		var rows: Array = _boards[board]
-		if not rows.is_empty() and (rows[0] as DotTimerRecord).map_id == map_id:
+		if not rows.is_empty() and (rows[0] as GSTimerRecord).map_id == map_id:
 			removed += rows.size()
 			_boards.erase(board)
 			_rows.erase(board)
 	_history = _history.filter(
-		func(e: Dictionary) -> bool: return (e["record"] as DotTimerRecord).map_id != map_id
+		func(e: Dictionary) -> bool: return (e["record"] as GSTimerRecord).map_id != map_id
 	)
 	for key in _progress.keys():
 		if String(key).split("|")[1].begins_with(String(map_id) + "/"):
 			_progress.erase(key)
 	_maps.erase(map_id)
-	return DotResult.success(removed)
+	return GSResult.success(removed)
 
 
 
 func note_player(
 	player_id: StringName, name: String, seen_at: int, playtime_add: float = 0.0
-) -> DotResult:
+) -> GSResult:
 	var row: Dictionary = _players.get(player_id, {})
 	if row.is_empty():
 		row = {
@@ -330,25 +330,25 @@ func note_player(
 		row["name"] = name
 	row["last_seen"] = maxi(int(row["last_seen"]), seen_at)
 	row["playtime"] = float(row["playtime"]) + maxf(playtime_add, 0.0)
-	return DotResult.success(true)
+	return GSResult.success(true)
 
 
-func player_info(player_id: StringName) -> DotResult:
+func player_info(player_id: StringName) -> GSResult:
 	var row: Variant = _players.get(player_id)
-	return DotResult.success((row as Dictionary).duplicate() if row is Dictionary else null)
+	return GSResult.success((row as Dictionary).duplicate() if row is Dictionary else null)
 
 
 func refresh_player_points(
 	player_ids: Array, weighting: float = 1.0, limit: int = 0
-) -> DotResult:
+) -> GSResult:
 	for id in player_ids:
 		var player_id := StringName(str(id))
 		var points: Array[float] = []
 		for board in _rows:
 			var found: Variant = (_rows[board] as Dictionary).get(player_id)
-			if found is DotTimerRecord and (found as DotTimerRecord).stage == 0:
-				points.append((found as DotTimerRecord).points)
-		var total := DotTimerPoints.weighted_total(points, weighting, limit)
+			if found is GSTimerRecord and (found as GSTimerRecord).stage == 0:
+				points.append((found as GSTimerRecord).points)
+		var total := GSTimerPoints.weighted_total(points, weighting, limit)
 		var row: Dictionary = _players.get(player_id, {})
 		if row.is_empty():
 			note_player(player_id, "", int(Time.get_unix_time_from_system()))
@@ -356,31 +356,31 @@ func refresh_player_points(
 		row["points"] = total
 		if row["name"] == "":
 			row["name"] = _name_of(player_id)
-	return DotResult.success(player_ids.size())
+	return GSResult.success(player_ids.size())
 
 
 func _name_of(player_id: StringName) -> String:
 	for board in _rows:
 		var found: Variant = (_rows[board] as Dictionary).get(player_id)
-		if found is DotTimerRecord:
-			return (found as DotTimerRecord).player_name
+		if found is GSTimerRecord:
+			return (found as GSTimerRecord).player_name
 	return String(player_id)
 
 
-func top_players(limit: int = 10, offset: int = 0) -> DotResult:
+func top_players(limit: int = 10, offset: int = 0) -> GSResult:
 	var ranked := _ranked_players()
 	var out: Array[Dictionary] = []
 	for i in range(maxi(offset, 0), mini(offset + limit, ranked.size())):
 		out.append(ranked[i])
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
-func player_rank(player_id: StringName) -> DotResult:
+func player_rank(player_id: StringName) -> GSResult:
 	var ranked := _ranked_players()
 	for row in ranked:
 		if StringName(str(row["player"])) == player_id:
-			return DotResult.success({"rank": row["rank"], "total": ranked.size(), "points": row["points"]})
-	return DotResult.success({"rank": 0, "total": ranked.size(), "points": 0.0})
+			return GSResult.success({"rank": row["rank"], "total": ranked.size(), "points": row["points"]})
+	return GSResult.success({"rank": 0, "total": ranked.size(), "points": 0.0})
 
 
 ## Players with points, best first, with tie-sharing ranks.
@@ -404,25 +404,25 @@ func _ranked_players() -> Array[Dictionary]:
 
 
 
-func put_map(info: Dictionary) -> DotResult:
+func put_map(info: Dictionary) -> GSResult:
 	var id := StringName(str(info.get("map", "")))
 	if id == &"":
-		return DotResult.fail(DotError.CODE_INVALID, "A map needs an id.")
+		return GSResult.fail(GSError.CODE_INVALID, "A map needs an id.")
 	var row: Dictionary = _maps.get(id, {})
 	for key in info:
 		row[key] = info[key]
 	row["map"] = String(id)
 	row["updated_at"] = int(Time.get_unix_time_from_system())
 	_maps[id] = row
-	return DotResult.success(true)
+	return GSResult.success(true)
 
 
-func map_info(map_id: StringName) -> DotResult:
+func map_info(map_id: StringName) -> GSResult:
 	var row: Variant = _maps.get(map_id)
-	return DotResult.success((row as Dictionary).duplicate(true) if row is Dictionary else null)
+	return GSResult.success((row as Dictionary).duplicate(true) if row is Dictionary else null)
 
 
-func maps() -> DotResult:
+func maps() -> GSResult:
 	var out: Array[Dictionary] = []
 	var ids := _maps.keys()
 	# By text, as the SQL store's ORDER BY map: sort() orders these StringName keys by
@@ -430,14 +430,14 @@ func maps() -> DotResult:
 	ids.sort_custom(func(x: Variant, y: Variant) -> bool: return str(x) < str(y))
 	for id in ids:
 		out.append((_maps[id] as Dictionary).duplicate(true))
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
 
 func note_progress(
 	player_id: StringName, map_id: StringName, track: int, style_id: StringName,
 	attempts: int, seconds: float, finished: bool
-) -> DotResult:
+) -> GSResult:
 	var key := "%s|%s" % [String(player_id), _key(map_id, track, style_id)]
 	var row: Dictionary = _progress.get(key, {
 		"attempts": 0, "completions": 0, "time_spent": 0.0, "time_to_first": -1.0,
@@ -449,27 +449,27 @@ func note_progress(
 		if float(row["time_to_first"]) < 0.0:
 			row["time_to_first"] = row["time_spent"]
 	_progress[key] = row
-	return DotResult.success(true)
+	return GSResult.success(true)
 
 
 func progress_for(
 	player_id: StringName, map_id: StringName, track: int, style_id: StringName
-) -> DotResult:
+) -> GSResult:
 	var row: Variant = _progress.get("%s|%s" % [String(player_id), _key(map_id, track, style_id)])
-	return DotResult.success((row as Dictionary).duplicate() if row is Dictionary else null)
+	return GSResult.success((row as Dictionary).duplicate() if row is Dictionary else null)
 
 
 
-func save_resume(player_id: StringName, map_id: StringName, state: Dictionary) -> DotResult:
+func save_resume(player_id: StringName, map_id: StringName, state: Dictionary) -> GSResult:
 	_resume["%s|%s" % [String(player_id), String(map_id)]] = state.duplicate(true)
-	return DotResult.success(true)
+	return GSResult.success(true)
 
 
-func take_resume(player_id: StringName, map_id: StringName) -> DotResult:
+func take_resume(player_id: StringName, map_id: StringName) -> GSResult:
 	var key := "%s|%s" % [String(player_id), String(map_id)]
 	var state: Variant = _resume.get(key)
 	_resume.erase(key)
-	return DotResult.success(state if state is Dictionary else null)
+	return GSResult.success(state if state is Dictionary else null)
 
 
 
@@ -485,13 +485,13 @@ func peek_best(
 	player_id: StringName, stage: int = 0
 ) -> Variant:
 	var found: Variant = _row(map_id, track, style_id, player_id, stage)
-	return (found as DotTimerRecord).duplicate_record() if found is DotTimerRecord else false
+	return (found as GSTimerRecord).duplicate_record() if found is GSTimerRecord else false
 
 
 
 ## Puts a stored row back as it was — no history entry, no completion bump. For a store
 ## loading its own rows from disk, which is not a finish.
-func _insert_loaded(record: DotTimerRecord) -> void:
+func _insert_loaded(record: GSTimerRecord) -> void:
 	var board := record.board_key()
 	if not _rows.has(board):
 		_rows[board] = {}
@@ -499,11 +499,11 @@ func _insert_loaded(record: DotTimerRecord) -> void:
 	var by_player: Dictionary = _rows[board]
 	var rows: Array = _boards[board]
 	var existing: Variant = by_player.get(record.player_id)
-	if existing is DotTimerRecord:
+	if existing is GSTimerRecord:
 		rows.erase(existing)
 	by_player[record.player_id] = record
 	rows.append(record)
-	DotTimerRecord.sort_fastest_first(rows)
+	GSTimerRecord.sort_fastest_first(rows)
 
 func _board(map_id: StringName, track: int, style_id: StringName, stage: int) -> Array:
 	var value: Variant = _boards.get(_key(map_id, track, style_id, stage), [])
@@ -518,8 +518,8 @@ func _row(
 
 
 ## Every record, for a bulk export or a migration into another store.
-func all_records() -> Array[DotTimerRecord]:
-	var out: Array[DotTimerRecord] = []
+func all_records() -> Array[GSTimerRecord]:
+	var out: Array[GSTimerRecord] = []
 	for board in _boards:
 		for record in (_boards[board] as Array):
 			out.append(record)

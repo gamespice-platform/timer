@@ -1,12 +1,12 @@
-class_name DotTimerCheckpoints
+class_name GSTimerCheckpoints
 extends RefCounted
 
 ## Practice mode: save where you are, teleport back to it, and keep trying the bit you cannot do.
-## Stores state, not a node; what to do with a restored checkpoint is the game's. Restoring taints the run via [method DotTimer.note_checkpoint_used].
+## Stores state, not a node; what to do with a restored checkpoint is the game's. Restoring taints the run via [method GSTimer.note_checkpoint_used].
 
 # No log channel: one player's practice state. Saving and restoring are keypresses, a
 # line per press is noise, and the one consequence that matters -- the run is tainted --
-# belongs to DotTimer, which is told.
+# belongs to GSTimer, which is told.
 
 ## A saved checkpoint was added, replaced or removed.
 signal changed(count: int, index: int)
@@ -63,7 +63,7 @@ class Checkpoint extends RefCounted:
 
 ## The timer this belongs to. Told whenever a checkpoint is restored.
 ## Optional: a game with no timer still wants practice teleports.
-var timer: DotTimer = null
+var timer: GSTimer = null
 
 ## The saved checkpoints, oldest first.
 var saved: Array[Checkpoint] = []
@@ -79,8 +79,8 @@ var limit: int = 30
 var enabled: bool = true
 
 
-static func of(p_timer: DotTimer) -> DotTimerCheckpoints:
-	var checkpoints := DotTimerCheckpoints.new()
+static func of(p_timer: GSTimer) -> GSTimerCheckpoints:
+	var checkpoints := GSTimerCheckpoints.new()
 	checkpoints.timer = p_timer
 	return checkpoints
 
@@ -103,10 +103,10 @@ func save(
 	grounded: bool = false,
 	crouched: bool = false,
 	extra: Dictionary = {}
-) -> DotResult:
+) -> GSResult:
 	if not enabled:
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN, "Checkpoints are off on this style."
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN, "Checkpoints are off on this style."
 		)
 
 	var checkpoint := Checkpoint.new()
@@ -134,7 +134,7 @@ func save(
 
 	changed.emit(saved.size(), index)
 
-	return DotResult.success(checkpoint)
+	return GSResult.success(checkpoint)
 
 
 ## The checkpoint at [member index], or null.
@@ -214,8 +214,8 @@ func to_dictionary() -> Dictionary:
 	return {"index": index, "checkpoints": list}
 
 
-static func from_dictionary(data: Dictionary) -> DotTimerCheckpoints:
-	var out := DotTimerCheckpoints.new()
+static func from_dictionary(data: Dictionary) -> GSTimerCheckpoints:
+	var out := GSTimerCheckpoints.new()
 
 	var list_value: Variant = data.get("checkpoints", [])
 
@@ -267,4 +267,4 @@ func describe() -> Dictionary:
 
 
 func _to_string() -> String:
-	return "DotTimerCheckpoints(%d/%d)" % [index + 1, saved.size()]
+	return "GSTimerCheckpoints(%d/%d)" % [index + 1, saved.size()]

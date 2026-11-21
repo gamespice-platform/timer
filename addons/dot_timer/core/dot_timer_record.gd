@@ -1,4 +1,4 @@
-class_name DotTimerRecord
+class_name GSTimerRecord
 extends RefCounted
 
 ## A finished run, as it is stored, sorted, sent and compared. Plain types only: it goes into JSON, a database and an HTTP body.
@@ -7,10 +7,10 @@ extends RefCounted
 ## Format version, written into every serialised record.
 const FORMAT_VERSION := 1
 
-## Which map, by id rather than by path. See [DotTimerZoneSet.map_id].
+## Which map, by id rather than by path. See [GSTimerZoneSet.map_id].
 var map_id: StringName = &""
 
-var track: int = DotTimerTrack.MAIN
+var track: int = GSTimerTrack.MAIN
 
 var style_id: StringName = &"normal"
 
@@ -52,7 +52,7 @@ var replay_id: String = ""
 var extra: Dictionary = {}
 
 ## Which section of the track this is the time for. 0 is the whole run.
-## Section [code]k[/code] runs from stage line [code]k - 1[/code] (the start) to line [code]k[/code] (the finish for the last); see [method DotTimerRun.section_time].
+## Section [code]k[/code] runs from stage line [code]k - 1[/code] (the start) to line [code]k[/code] (the finish for the last); see [method GSTimerRun.section_time].
 var stage: int = 0
 
 ## How many times the player has finished this board, slower runs included.
@@ -73,12 +73,12 @@ var timescale: float = 1.0
 
 
 static func from_run(
-	run: DotTimerRun,
+	run: GSTimerRun,
 	p_map: StringName,
 	p_player: StringName,
 	p_name: String
-) -> DotTimerRecord:
-	var record := DotTimerRecord.new()
+) -> GSTimerRecord:
+	var record := GSTimerRecord.new()
 
 	record.map_id = p_map
 	record.track = run.track
@@ -114,18 +114,18 @@ static func from_run(
 ## A section of [param run] as its own record: the time between two stage lines.
 ## Null when the run has not crossed both ends of that section.
 static func section_from_run(
-	run: DotTimerRun,
+	run: GSTimerRun,
 	section: int,
 	total_sections: int,
 	p_map: StringName,
 	p_player: StringName,
 	p_name: String
-) -> DotTimerRecord:
+) -> GSTimerRecord:
 	var seconds := run.section_time(section, total_sections)
 	if seconds < 0.0:
 		return null
 
-	var record := DotTimerRecord.new()
+	var record := GSTimerRecord.new()
 	record.map_id = p_map
 	record.track = run.track
 	record.style_id = run.style_id
@@ -163,21 +163,21 @@ func key() -> String:
 
 ## Whether this record beats [param other]. Strictly: an equal time does not.
 ## A tie of their own record is not an improvement; replacing the row would move the date and reset the replay.
-func beats(other: DotTimerRecord) -> bool:
+func beats(other: GSTimerRecord) -> bool:
 	if other == null:
 		return true
 	return time < other.time
 
 
 func formatted_time() -> String:
-	return DotTimerRun.format_time(time)
+	return GSTimerRun.format_time(time)
 
 
 ## The gap to [param other], as [code]+1:23.456[/code] or [code]-0:00.123[/code].
-func delta_to(other: DotTimerRecord) -> String:
+func delta_to(other: GSTimerRecord) -> String:
 	if other == null:
 		return ""
-	return DotTimerRun.format_time(time - other.time, true)
+	return GSTimerRun.format_time(time - other.time, true)
 
 
 func to_dictionary() -> Dictionary:
@@ -189,7 +189,7 @@ func to_dictionary() -> Dictionary:
 		"player": String(player_id),
 		"name": player_name,
 		"time": time,
-		# Duplicated for the reason DotTimerZone's payload is: a Dictionary is a
+		# Duplicated for the reason GSTimerZone's payload is: a Dictionary is a
 		# reference, and `duplicate_record()` round-trips through here — so a
 		# "copy" would share its splits with the record it was copied from.
 		"splits": splits.duplicate(true),
@@ -208,13 +208,13 @@ func to_dictionary() -> Dictionary:
 	}
 
 
-static func from_dictionary(data: Dictionary) -> DotTimerRecord:
-	var record := DotTimerRecord.new()
+static func from_dictionary(data: Dictionary) -> GSTimerRecord:
+	var record := GSTimerRecord.new()
 
 	record.map_id = StringName(str(data.get("map", "")))
 	record.track = int(data.get("track", 0))
-	if not DotTimerTrack.is_valid(record.track):
-		push_error("DotTimerRecord: track %d is not a track (0 or more)" % record.track)
+	if not GSTimerTrack.is_valid(record.track):
+		push_error("GSTimerRecord: track %d is not a track (0 or more)" % record.track)
 	record.style_id = StringName(str(data.get("style", "normal")))
 	record.player_id = StringName(str(data.get("player", "")))
 	record.player_name = str(data.get("name", ""))
@@ -253,22 +253,22 @@ static func from_dictionary(data: Dictionary) -> DotTimerRecord:
 	return record
 
 
-func duplicate_record() -> DotTimerRecord:
-	return DotTimerRecord.from_dictionary(to_dictionary())
+func duplicate_record() -> GSTimerRecord:
+	return GSTimerRecord.from_dictionary(to_dictionary())
 
 
 ## Sorts a list fastest-first, in place.
 ## A named helper: the wrong-way-round comparison gives a plausible but upside-down leaderboard, and gets copied.
 static func sort_fastest_first(records: Array) -> void:
 	records.sort_custom(
-		func(a: DotTimerRecord, b: DotTimerRecord) -> bool: return a.time < b.time
+		func(a: GSTimerRecord, b: GSTimerRecord) -> bool: return a.time < b.time
 	)
 
 
 func describe() -> Dictionary:
 	return {
 		"map": String(map_id),
-		"track": DotTimerTrack.short_name_of(track),
+		"track": GSTimerTrack.short_name_of(track),
 		"style": String(style_id),
 		"stage": stage,
 		"player": player_name if player_name != "" else String(player_id),
@@ -279,7 +279,7 @@ func describe() -> Dictionary:
 
 
 func _to_string() -> String:
-	return "DotTimerRecord(%s %s %s)" % [
+	return "GSTimerRecord(%s %s %s)" % [
 		String(map_id), formatted_time(),
 		player_name if player_name != "" else String(player_id)
 	]

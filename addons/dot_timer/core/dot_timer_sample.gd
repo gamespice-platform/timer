@@ -1,4 +1,4 @@
-class_name DotTimerSample
+class_name GSTimerSample
 extends RefCounted
 
 ## One tick of a player, as the timer sees them: position, velocity, grounded. The host fills one in each tick and reuses it.

@@ -11,7 +11,7 @@ const SECTIONS := 36
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -84,19 +84,19 @@ func _run() -> void:
 ## Walks a player from [param from_x] to [param to_x] at [param speed], ticking the timer once per tick. Returns the timer.
 ## Sub-tick positions on purpose: not landing on zone boundaries is the case the crossing fractions exist for.
 func _walk(
-	set: DotTimerZoneSet,
+	set: GSTimerZoneSet,
 	tick_rate: int,
 	speed: float,
 	from_x: float = -2.0,
 	to_x: float = 104.0,
-	style: DotTimerStyle = null
-) -> DotTimer:
-	var timer := DotTimer.new()
+	style: GSTimerStyle = null
+) -> GSTimer:
+	var timer := GSTimer.new()
 	timer.authoritative = true
 	timer.bind(set, tick_rate)
 	timer.style = style
 
-	var sample := DotTimerSample.new()
+	var sample := GSTimerSample.new()
 	var step := speed / float(tick_rate)
 
 	var x := from_x
@@ -116,49 +116,49 @@ func _walk(
 func _test_track_names() -> void:
 	_section("tracks")
 
-	_check(DotTimerTrack.parse("main") == DotTimerTrack.MAIN, "\"main\" is the main track")
-	_check(DotTimerTrack.parse("bonus 3") == 3, "\"bonus 3\" is track 3")
-	_check(DotTimerTrack.parse("b2") == 2, "\"b2\" is track 2")
-	_check(DotTimerTrack.parse("") == DotTimerTrack.MAIN, "an empty string is main")
+	_check(GSTimerTrack.parse("main") == GSTimerTrack.MAIN, "\"main\" is the main track")
+	_check(GSTimerTrack.parse("bonus 3") == 3, "\"bonus 3\" is track 3")
+	_check(GSTimerTrack.parse("b2") == 2, "\"b2\" is track 2")
+	_check(GSTimerTrack.parse("") == GSTimerTrack.MAIN, "an empty string is main")
 
 	# No cap on bonuses: a map may draw as many as it likes.
-	_check(DotTimerTrack.parse("bonus 9") == 9 and DotTimerTrack.parse("b40") == 40, "bonuses past 8 are tracks too")
-	_check(DotTimerTrack.of_bonus(40) == 40 and DotTimerTrack.is_bonus(40), "of_bonus and is_bonus take any bonus number")
+	_check(GSTimerTrack.parse("bonus 9") == 9 and GSTimerTrack.parse("b40") == 40, "bonuses past 8 are tracks too")
+	_check(GSTimerTrack.of_bonus(40) == 40 and GSTimerTrack.is_bonus(40), "of_bonus and is_bonus take any bonus number")
 	# The refusal matters more than the parses: a console command that read "nonsense"
 	# as "main" would file a record on a track the player did not run.
-	_check(DotTimerTrack.parse("bonus -1") == -1, "a negative bonus is refused")
-	_check(DotTimerTrack.parse("nonsense") == -1, "and so is nonsense")
-	_check(not DotTimerTrack.is_valid(-1), "and a negative track is not a track")
+	_check(GSTimerTrack.parse("bonus -1") == -1, "a negative bonus is refused")
+	_check(GSTimerTrack.parse("nonsense") == -1, "and so is nonsense")
+	_check(not GSTimerTrack.is_valid(-1), "and a negative track is not a track")
 
 	var wire := _BitWire.new()
 	for t in [0, 8, 14, 15, 40, 100000]:
-		DotTimerTrack.write_wire(wire, t)
+		GSTimerTrack.write_wire(wire, t)
 	var back: Array = []
 	for i in range(6):
-		back.append(DotTimerTrack.read_wire(wire))
+		back.append(GSTimerTrack.read_wire(wire))
 	_check(back == [0, 8, 14, 15, 40, 100000], "any track crosses the wire (%s)" % [back])
-	_check(DotTimerTrack.wire_bits(8) == 4 and DotTimerTrack.wire_bits(40) == 4 + DotTimerTrack.WIDE_BITS,
+	_check(GSTimerTrack.wire_bits(8) == 4 and GSTimerTrack.wire_bits(40) == 4 + GSTimerTrack.WIDE_BITS,
 		"tracks 0..14 keep the old 4-bit field; larger ones escape to a wide one")
 
-	var state := DotTimerNet.RunState.new()
+	var state := GSTimerNet.RunState.new()
 	state.track = 40
 	state.stage = 500
 	state.write(wire)
-	var fin := DotTimerNet.Finish.new()
+	var fin := GSTimerNet.Finish.new()
 	fin.track = 3
 	fin.rank = 70000
 	fin.write(wire)
-	var state_back := DotTimerNet.RunState.new()
+	var state_back := GSTimerNet.RunState.new()
 	state_back.read(wire)
-	var fin_back := DotTimerNet.Finish.new()
+	var fin_back := GSTimerNet.Finish.new()
 	fin_back.read(wire)
 	_check(state_back.stage == 500 and state_back.track == 40, "a stage past 62 crosses the wire")
 	_check(fin_back.rank == 70000 and fin_back.track == 3, "a rank past 4094 crosses the wire, not clamped to 4095")
-	_check(DotTimerNet.open_bits(5, 6) == 6 and DotTimerNet.open_bits(62, 6) == 6 and DotTimerNet.open_bits(63, 6) == 37,
+	_check(GSTimerNet.open_bits(5, 6) == 6 and GSTimerNet.open_bits(62, 6) == 6 and GSTimerNet.open_bits(63, 6) == 37,
 		"stages below 63 keep the old 6-bit field")
 
-	_check(DotTimerTrack.is_bonus(1), "track 1 is a bonus")
-	_check(not DotTimerTrack.is_bonus(0), "track 0 is not")
+	_check(GSTimerTrack.is_bonus(1), "track 1 is a bonus")
+	_check(not GSTimerTrack.is_bonus(0), "track 0 is not")
 	_done()
 
 
@@ -169,10 +169,10 @@ func _test_zone_set_validation() -> void:
 	_check(good.problems().is_empty(), "a well-formed corridor has no problems",
 		", ".join(good.problems()))
 	_check(good.playable_tracks() == PackedInt32Array([0]), "and one playable track")
-	_check(good.stage_count(DotTimerTrack.MAIN) == 3, "and three stages")
+	_check(good.stage_count(GSTimerTrack.MAIN) == 3, "and three stages")
 
-	var no_end := DotTimerZoneSet.new()
-	no_end.add(DotTimerZone.make(DotTimerZone.Kind.START).set_box(
+	var no_end := GSTimerZoneSet.new()
+	no_end.add(GSTimerZone.make(GSTimerZone.Kind.START).set_box(
 		Vector3.ZERO, Vector3.ONE
 	))
 
@@ -184,7 +184,7 @@ func _test_zone_set_validation() -> void:
 	)
 
 	var two_starts := _corridor()
-	two_starts.add(DotTimerZone.make(DotTimerZone.Kind.START).set_box(
+	two_starts.add(GSTimerZone.make(GSTimerZone.Kind.START).set_box(
 		Vector3(50.0, 0.0, 0.0), Vector3(52.0, 2.0, 2.0)
 	))
 	_check(
@@ -193,7 +193,7 @@ func _test_zone_set_validation() -> void:
 	)
 
 	var gap := _corridor()
-	gap.add(DotTimerZone.make(DotTimerZone.Kind.STAGE).set_box(
+	gap.add(GSTimerZone.make(GSTimerZone.Kind.STAGE).set_box(
 		Vector3(80.0, 0.0, 0.0), Vector3(82.0, 2.0, 2.0)
 	))
 	gap.zones[gap.zones.size() - 1].number = 9.0
@@ -205,8 +205,8 @@ func _test_zone_set_validation() -> void:
 
 	# The thin-zone check: a finish thinner than one tick of travel is the classic
 	# "my run never ended".
-	var thin := DotTimerZoneSet.new()
-	thin.add(DotTimerZone.make(DotTimerZone.Kind.START).set_box(
+	var thin := GSTimerZoneSet.new()
+	thin.add(GSTimerZone.make(GSTimerZone.Kind.START).set_box(
 		Vector3.ZERO, Vector3(0.05, 3.0, 3.0)
 	))
 
@@ -226,8 +226,8 @@ func _test_zone_set_validation() -> void:
 	# The axis split. A height band is thin on Y and enormous everywhere else, and
 	# whether that is a bug is a question about falling, not about running: the bands
 	# on a jumping course are entered on the way up at walking speed.
-	var band := DotTimerZoneSet.new()
-	band.add(DotTimerZone.make(DotTimerZone.Kind.STAGE).set_box(
+	var band := GSTimerZoneSet.new()
+	band.add(GSTimerZone.make(GSTimerZone.Kind.STAGE).set_box(
 		Vector3(-9.0, 5.0, -9.0), Vector3(9.0, 5.6, 9.0)
 	))
 	band.zones[band.zones.size() - 1].number = 1.0
@@ -243,8 +243,8 @@ func _test_zone_set_validation() -> void:
 
 	# And the case the vertical budget must never quietly excuse: a pit drawn as a thin
 	# horizontal plane, which is how an imported map draws every one of them.
-	var pit := DotTimerZoneSet.new()
-	pit.add(DotTimerZone.make(DotTimerZone.Kind.RESPAWN).set_box(
+	var pit := GSTimerZoneSet.new()
+	pit.add(GSTimerZone.make(GSTimerZone.Kind.RESPAWN).set_box(
 		Vector3(-32.0, 0.0, -32.0), Vector3(32.0, 0.4, 32.0)
 	))
 
@@ -256,7 +256,7 @@ func _test_zone_set_validation() -> void:
 
 
 ## `[track-zone-1]`: a set complete for one track and partial for another.
-## [method DotTimerZoneSet.problems] is per zone and pair, so a bonus with only a start and an end passes while players falling off it fall for ever.
+## [method GSTimerZoneSet.problems] is per zone and pair, so a bonus with only a start and an end passes while players falling off it fall for ever.
 func _test_route_completeness() -> void:
 	_section("route completeness, per track")
 
@@ -271,19 +271,19 @@ func _test_route_completeness() -> void:
 		"which is missing a spawn and a pit, and says both",
 		str(bare_problems))
 
-	var whole := _route_complete(_corridor(), DotTimerTrack.MAIN, 200.0)
+	var whole := _route_complete(_corridor(), GSTimerTrack.MAIN, 200.0)
 	_check(whole.route_problems().is_empty(), "with both, the route is complete",
 		str(whole.route_problems()))
 
 	# The hole itself: a bonus drawn with a start, an end and a spawn, beside a main
 	# route with a pit. problems() is satisfied; nobody on the bonus can be put back.
-	var bonus := DotTimerTrack.BONUS_FIRST
-	var partial := _route_complete(_corridor(), DotTimerTrack.MAIN, 200.0)
-	partial.add(DotTimerZone.make(DotTimerZone.Kind.START, bonus).set_box(
+	var bonus := GSTimerTrack.BONUS_FIRST
+	var partial := _route_complete(_corridor(), GSTimerTrack.MAIN, 200.0)
+	partial.add(GSTimerZone.make(GSTimerZone.Kind.START, bonus).set_box(
 		Vector3(0.0, 20.0, 0.0), Vector3(4.0, 24.0, 4.0)))
-	partial.add(DotTimerZone.make(DotTimerZone.Kind.END, bonus).set_box(
+	partial.add(GSTimerZone.make(GSTimerZone.Kind.END, bonus).set_box(
 		Vector3(40.0, 20.0, 0.0), Vector3(44.0, 24.0, 4.0)))
-	var bonus_spawn := DotTimerZone.make(DotTimerZone.Kind.SPAWN, bonus)
+	var bonus_spawn := GSTimerZone.make(GSTimerZone.Kind.SPAWN, bonus)
 	bonus_spawn.destination = Vector3(2.0, 21.0, 2.0)
 	partial.add(bonus_spawn)
 
@@ -302,7 +302,7 @@ func _test_route_completeness() -> void:
 	for zone in sandbox.zones:
 		zone.track = bonus
 	_route_complete(sandbox, bonus, 200.0)
-	var lobby := DotTimerZone.make(DotTimerZone.Kind.SPAWN, DotTimerTrack.MAIN)
+	var lobby := GSTimerZone.make(GSTimerZone.Kind.SPAWN, GSTimerTrack.MAIN)
 	lobby.destination = Vector3(0.0, 1.0, 0.0)
 	sandbox.add(lobby)
 	_check(
@@ -312,11 +312,11 @@ func _test_route_completeness() -> void:
 		"%s %s" % [sandbox.route_tracks(), sandbox.route_problems()])
 
 	# Every missing piece is named, on the track it is missing from.
-	var gaps := DotTimerZoneSet.new()
-	var two := DotTimerTrack.of_bonus(2)
-	gaps.add(DotTimerZone.make(DotTimerZone.Kind.START, two).set_box(
+	var gaps := GSTimerZoneSet.new()
+	var two := GSTimerTrack.of_bonus(2)
+	gaps.add(GSTimerZone.make(GSTimerZone.Kind.START, two).set_box(
 		Vector3.ZERO, Vector3(4.0, 4.0, 4.0)))
-	var stray := DotTimerZone.make(DotTimerZone.Kind.STAGE, two).set_box(
+	var stray := GSTimerZone.make(GSTimerZone.Kind.STAGE, two).set_box(
 		Vector3(10.0, 0.0, 0.0), Vector3(12.0, 4.0, 4.0))
 	stray.number = 2.0
 	gaps.add(stray)
@@ -332,12 +332,12 @@ func _test_route_completeness() -> void:
 	# A pitless route is declared in the file, and survives the trip through JSON —
 	# which hands the track number back as a float.
 	var circuit := _corridor()
-	var circuit_spawn := DotTimerZone.make(DotTimerZone.Kind.SPAWN)
+	var circuit_spawn := GSTimerZone.make(GSTimerZone.Kind.SPAWN)
 	circuit_spawn.destination = Vector3(2.0, 1.0, 0.0)
 	circuit.add(circuit_spawn)
-	circuit.meta[DotTimerZoneSet.PITLESS_TRACKS_KEY] = [DotTimerTrack.MAIN]
-	var loaded := DotTimerZoneSet.from_json(circuit.to_json())
-	var trip: DotTimerZoneSet = loaded.value if loaded.ok else null
+	circuit.meta[GSTimerZoneSet.PITLESS_TRACKS_KEY] = [GSTimerTrack.MAIN]
+	var loaded := GSTimerZoneSet.from_json(circuit.to_json())
+	var trip: GSTimerZoneSet = loaded.value if loaded.ok else null
 	_check(
 		trip != null and trip.pitless_tracks() == PackedInt32Array([0])
 			and trip.route_problems().is_empty(),
@@ -345,8 +345,8 @@ func _test_route_completeness() -> void:
 		str(trip.route_problems()) if trip != null else "did not load")
 
 	# And the declaration cannot outlive its reason, either way round.
-	var stale := _route_complete(_corridor(), DotTimerTrack.MAIN, 200.0)
-	stale.meta[DotTimerZoneSet.PITLESS_TRACKS_KEY] = [DotTimerTrack.MAIN, 5]
+	var stale := _route_complete(_corridor(), GSTimerTrack.MAIN, 200.0)
+	stale.meta[GSTimerZoneSet.PITLESS_TRACKS_KEY] = [GSTimerTrack.MAIN, 5]
 	var stale_problems := "\n".join(stale.route_problems())
 	_check(
 		"Main is declared pitless and has a respawn zone" in stale_problems
@@ -362,12 +362,12 @@ func _test_route_completeness() -> void:
 
 ## Adds a spawn and a pit on [param track] to [param set], and returns it.
 func _route_complete(
-	set: DotTimerZoneSet, track: int, below: float
-) -> DotTimerZoneSet:
-	var spawn := DotTimerZone.make(DotTimerZone.Kind.SPAWN, track)
+	set: GSTimerZoneSet, track: int, below: float
+) -> GSTimerZoneSet:
+	var spawn := GSTimerZone.make(GSTimerZone.Kind.SPAWN, track)
 	spawn.destination = Vector3(2.0, 1.0, 0.0)
 	set.add(spawn)
-	set.add(DotTimerZone.make(DotTimerZone.Kind.RESPAWN, track).set_box(
+	set.add(GSTimerZone.make(GSTimerZone.Kind.RESPAWN, track).set_box(
 		Vector3(-below, -below, -below), Vector3(below, -10.0, below)))
 	return set
 
@@ -380,7 +380,7 @@ func _test_basic_run() -> void:
 	_check(timer.runs_started == 1, "one run started", "%d" % timer.runs_started)
 	_check(timer.runs_finished == 1, "and one finished", "%d" % timer.runs_finished)
 	_check(
-		timer.run.status == DotTimerRun.Status.FINISHED,
+		timer.run.status == GSTimerRun.Status.FINISHED,
 		"and the run is in the finished state"
 	)
 
@@ -394,11 +394,11 @@ func _test_start_on_leaving() -> void:
 	_section("the run begins on leaving the start zone")
 
 	var set := _corridor()
-	var timer := DotTimer.new()
+	var timer := GSTimer.new()
 	timer.authoritative = true
 	timer.bind(set, 128)
 
-	var sample := DotTimerSample.new()
+	var sample := GSTimerSample.new()
 	sample.grounded = true
 	sample.position = Vector3(-2.0, 0.0, 0.0)
 	sample.previous_position = sample.position
@@ -412,7 +412,7 @@ func _test_start_on_leaving() -> void:
 		timer.tick(sample)
 
 	_check(
-		timer.run.status == DotTimerRun.Status.STOPPED,
+		timer.run.status == GSTimerRun.Status.STOPPED,
 		"a hundred ticks inside the start zone does not start the timer"
 	)
 
@@ -427,7 +427,7 @@ func _test_start_on_leaving() -> void:
 	# they next leave it: the clock reads zero while they build their speed up again.
 	var reasons := PackedStringArray()
 	timer.run_stopped.connect(
-		func(_run: DotTimerRun, reason: StringName) -> void: reasons.append(String(reason))
+		func(_run: GSTimerRun, reason: StringName) -> void: reasons.append(String(reason))
 	)
 	var back := sample.position.x
 	while back > 2.0:
@@ -436,7 +436,7 @@ func _test_start_on_leaving() -> void:
 		sample.velocity = Vector3(-6.4, 0.0, 0.0)
 		timer.tick(sample)
 	_check(
-		timer.run.status == DotTimerRun.Status.STOPPED and reasons == PackedStringArray(["reset"]),
+		timer.run.status == GSTimerRun.Status.STOPPED and reasons == PackedStringArray(["reset"]),
 		"walking back into the start zone ends the run there, as a reset",
 		"status %d, reasons %s" % [timer.run.status, str(reasons)]
 	)
@@ -449,15 +449,15 @@ func _test_start_on_leaving() -> void:
 	_check(timer.runs_started == 2 and timer.run.is_running(), "and leaving again starts a new one")
 
 	# The air-start rule.
-	var strict := DotTimerStyle.new()
+	var strict := GSTimerStyle.new()
 	strict.allow_air_start = false
 
-	var airborne := DotTimer.new()
+	var airborne := GSTimer.new()
 	airborne.authoritative = true
 	airborne.bind(set, 128)
 	airborne.style = strict
 
-	var air_sample := DotTimerSample.new()
+	var air_sample := GSTimerSample.new()
 	air_sample.grounded = false
 
 	for i in range(200):
@@ -472,12 +472,12 @@ func _test_start_on_leaving() -> void:
 
 	strict.allow_air_start = true
 
-	var permissive := DotTimer.new()
+	var permissive := GSTimer.new()
 	permissive.authoritative = true
 	permissive.bind(set, 128)
 	permissive.style = strict
 
-	var air_sample2 := DotTimerSample.new()
+	var air_sample2 := GSTimerSample.new()
 	air_sample2.grounded = false
 
 	for i in range(200):
@@ -565,7 +565,7 @@ func _test_stages_and_splits() -> void:
 	_check(run.split_time(9) < 0.0, "an unreached stage reports no time")
 
 	# Walking back through a stage must not overwrite the split with a later one.
-	var reached := DotTimerRun.make(0, &"normal", 1.0 / 128.0)
+	var reached := GSTimerRun.make(0, &"normal", 1.0 / 128.0)
 	reached.begin(0.0)
 	reached.ticks = 100
 	reached.mark_stage(1)
@@ -585,43 +585,43 @@ func _test_stage_navigation() -> void:
 	var set := _corridor()
 
 	# Every stage zone gets a destination, which is what "go to stage 3" resolves to.
-	for zone in set.of_kind(DotTimerZone.Kind.STAGE, DotTimerTrack.MAIN):
+	for zone in set.of_kind(GSTimerZone.Kind.STAGE, GSTimerTrack.MAIN):
 		zone.destination = zone.centre() + Vector3(0.0, 1.0, 0.0)
 		zone.destination_yaw = 90.0
 
-	var manager := DotTimerManager.new()
+	var manager := GSTimerManager.new()
 	manager.authoritative = true
 	manager.tick_rate = 128
-	manager.store = DotTimerStoreMemory.new()
+	manager.store = GSTimerStoreMemory.new()
 	manager.record_replays = false
 	add_child(manager)
 
 	manager.set_zones(set)
-	manager.set_styles(DotTimerStyle.defaults())
+	manager.set_styles(GSTimerStyle.defaults())
 	manager.add_player(&"nav", "Navigator")
 
-	_check(manager.stage_count(DotTimerTrack.MAIN) == 3, "the map reports three stages")
+	_check(manager.stage_count(GSTimerTrack.MAIN) == 3, "the map reports three stages")
 	_check(
-		manager.stage_count(DotTimerTrack.of_bonus(1)) == 0,
+		manager.stage_count(GSTimerTrack.of_bonus(1)) == 0,
 		"and none on a track that has none"
 	)
 	_check(
-		manager.stage_zone(DotTimerTrack.MAIN, 2) != null,
+		manager.stage_zone(GSTimerTrack.MAIN, 2) != null,
 		"a stage zone is found by its number"
 	)
 	_check(
-		manager.stage_zone(DotTimerTrack.MAIN, 9) == null,
+		manager.stage_zone(GSTimerTrack.MAIN, 9) == null,
 		"and an absent one is null rather than the nearest"
 	)
 	_check(
-		manager.tracks().has(DotTimerTrack.MAIN),
+		manager.tracks().has(GSTimerTrack.MAIN),
 		"and the playable tracks reach a caller"
 	)
 
 	# The signal carries the zone. Captured into an Array: a lambda captures locals BY VALUE, so a counter would stay zero outside it.
 	var asked: Array = []
 	manager.stage_requested.connect(
-		func(id: StringName, number: int, zone: DotTimerZone) -> void:
+		func(id: StringName, number: int, zone: GSTimerZone) -> void:
 			asked.append([id, number, zone])
 	)
 
@@ -631,14 +631,14 @@ func _test_stage_navigation() -> void:
 	_check(asked.size() == 1, "and the host is told exactly once")
 
 	if asked.size() == 1:
-		var zone: DotTimerZone = asked[0][2]
+		var zone: GSTimerZone = asked[0][2]
 		_check(int(asked[0][1]) == 2, "with the stage number")
 		_check(
 			zone != null and is_equal_approx(zone.destination_yaw, 90.0),
 			"and the zone, carrying where to put them"
 		)
 
-	# Refused rather than clamped, for the reason DotTimerTrack.parse returns -1
+	# Refused rather than clamped, for the reason GSTimerTrack.parse returns -1
 	# rather than falling back to the main track.
 	var too_high := manager.request_stage(&"nav", 9)
 	_check(not too_high.ok, "a stage past the last one is refused")
@@ -667,12 +667,12 @@ func _test_stage_navigation() -> void:
 	)
 
 	# A map with no stages at all refuses, and says which map and track.
-	var flat := DotTimerZoneSet.new()
+	var flat := GSTimerZoneSet.new()
 	flat.map_id = &"test_flat"
-	flat.add(DotTimerZone.make(DotTimerZone.Kind.START).set_box(
+	flat.add(GSTimerZone.make(GSTimerZone.Kind.START).set_box(
 		Vector3(0.0, -2.0, -4.0), Vector3(4.0, 4.0, 4.0)
 	))
-	flat.add(DotTimerZone.make(DotTimerZone.Kind.END).set_box(
+	flat.add(GSTimerZone.make(GSTimerZone.Kind.END).set_box(
 		Vector3(96.0, -2.0, -4.0), Vector3(100.0, 4.0, 4.0)
 	))
 	manager.set_zones(flat)
@@ -690,7 +690,7 @@ func _test_stage_navigation() -> void:
 
 
 ## Ticks a player far enough into the corridor to be mid-run, without finishing.
-func _walk_timer_into_run(manager: DotTimerManager, id: StringName) -> void:
+func _walk_timer_into_run(manager: GSTimerManager, id: StringName) -> void:
 	var speed := 10.0
 	var step := speed / 128.0
 	var x := 1.0
@@ -707,11 +707,11 @@ func _test_hud_overlay() -> void:
 	_section("the timer HUD lays itself out")
 
 	# An interface's bugs are invisible to assertions; what CAN be asserted is a SIZE (0 x 0 Controls shipped twice) and a POSITION.
-	var hud := DotTimerHud.new()
+	var hud := GSTimerHud.new()
 	hud.size = Vector2(1600.0, 900.0)
 	add_child(hud)
 
-	var run := DotTimerRun.make(DotTimerTrack.MAIN, &"normal", 1.0 / 128.0)
+	var run := GSTimerRun.make(GSTimerTrack.MAIN, &"normal", 1.0 / 128.0)
 	run.begin(0.0)
 	run.ticks = 640
 
@@ -744,9 +744,9 @@ func _test_hud_overlay() -> void:
 	hud.compact = true
 
 	# Placement. A `Corner` enum would shadow the GLOBAL Godot enum and make every assignment a parse error pointing at the assignment.
-	hud.corner = DotTimerHud.Placement.BOTTOM_CENTRE
+	hud.corner = GSTimerHud.Placement.BOTTOM_CENTRE
 	var bottom := hud._plate_origin(block)
-	hud.corner = DotTimerHud.Placement.TOP_LEFT
+	hud.corner = GSTimerHud.Placement.TOP_LEFT
 	var top := hud._plate_origin(block)
 
 	_check(bottom.y > top.y, "the bottom placement is below the top one")
@@ -761,7 +761,7 @@ func _test_hud_overlay() -> void:
 		"and the top-left one clears the margin"
 	)
 
-	hud.corner = DotTimerHud.Placement.BOTTOM_RIGHT
+	hud.corner = GSTimerHud.Placement.BOTTOM_RIGHT
 	var right := hud._plate_origin(block)
 	_check(
 		is_equal_approx(right.x + block.x + hud.margin.x, 1600.0),
@@ -783,7 +783,7 @@ func _test_hud_overlay() -> void:
 	)
 
 	# The splits handed in are COPIED. A Dictionary is a reference in GDScript, and
-	# three of DotTimerRecord's dictionaries have already been this bug once.
+	# three of GSTimerRecord's dictionaries have already been this bug once.
 	var splits := {2: 4.0}
 	hud.set_stage_reference(3, splits)
 	hud.stage_comparison[2] = 99.0
@@ -796,9 +796,9 @@ func _test_hud_overlay() -> void:
 	_done()
 
 
-func _splits_run(seconds: float, lines: Array) -> DotTimerRun:
+func _splits_run(seconds: float, lines: Array) -> GSTimerRun:
 	# Ticks set directly: the panel reads times, and this keeps the arithmetic exact.
-	var r := DotTimerRun.make(DotTimerTrack.MAIN, &"normal", 1.0 / 128.0)
+	var r := GSTimerRun.make(GSTimerTrack.MAIN, &"normal", 1.0 / 128.0)
 	r.begin(0.0)
 	for line: Array in lines:
 		r.ticks = int(float(line[1]) * 128.0)
@@ -810,7 +810,7 @@ func _splits_run(seconds: float, lines: Array) -> DotTimerRun:
 func _test_splits_panel() -> void:
 	_section("the stage-splits panel")
 
-	var panel := DotTimerSplitsPanel.new()
+	var panel := GSTimerSplitsPanel.new()
 	panel.size = Vector2(1600.0, 900.0)
 	add_child(panel)
 
@@ -970,7 +970,7 @@ func _test_splits_panel() -> void:
 func _test_splits_snapshot() -> void:
 	_section("the splits panel: delta text, reference snapshot, live updates")
 
-	var panel := DotTimerSplitsPanel.new()
+	var panel := GSTimerSplitsPanel.new()
 	panel.size = Vector2(1600.0, 900.0)
 	add_child(panel)
 
@@ -1042,7 +1042,7 @@ func _test_splits_snapshot() -> void:
 	_done()
 
 
-func _check_splits_delta_text(panel: DotTimerSplitsPanel) -> void:
+func _check_splits_delta_text(panel: GSTimerSplitsPanel) -> void:
 	# 1. The delta keeps the tens digit and drops only a leading zero.
 	_check(panel._delta(0.4) == "+0.400", "delta 0.4", panel._delta(0.4))
 	_check(panel._delta(2.3) == "+2.300", "delta 2.3", panel._delta(2.3))
@@ -1056,7 +1056,7 @@ func _check_splits_delta_text(panel: DotTimerSplitsPanel) -> void:
 
 func _check_splits_without_run(cmp: Dictionary, best: Dictionary) -> void:
 	# No run at all: set_reference first, then show_run(null), must not error.
-	var bare := DotTimerSplitsPanel.new()
+	var bare := GSTimerSplitsPanel.new()
 	bare.size = Vector2(1600.0, 900.0)
 	add_child(bare)
 	bare.set_reference(3, cmp, 60.0, best, "PB")
@@ -1077,12 +1077,12 @@ func _test_other_track_ignored() -> void:
 	# A bonus finish sitting in the middle of the main corridor. Real maps do this
 	# constantly — a bonus route crosses the main one — and a timer that reacted to
 	# any finish line would end every main run halfway through.
-	var bonus_end := DotTimerZone.make(DotTimerZone.Kind.END, DotTimerTrack.of_bonus(1))
+	var bonus_end := GSTimerZone.make(GSTimerZone.Kind.END, GSTimerTrack.of_bonus(1))
 	bonus_end.set_box(Vector3(40.0, -2.0, -4.0), Vector3(44.0, 4.0, 4.0))
 	set.add(bonus_end)
 
-	var bonus_start := DotTimerZone.make(
-		DotTimerZone.Kind.START, DotTimerTrack.of_bonus(1)
+	var bonus_start := GSTimerZone.make(
+		GSTimerZone.Kind.START, GSTimerTrack.of_bonus(1)
 	)
 	bonus_start.set_box(Vector3(30.0, -2.0, -4.0), Vector3(32.0, 4.0, 4.0))
 	set.add(bonus_start)
@@ -1101,7 +1101,7 @@ func _test_stop_and_death() -> void:
 	_section("stopping a run")
 
 	var set := _corridor()
-	var stop := DotTimerZone.make(DotTimerZone.Kind.STOP)
+	var stop := GSTimerZone.make(GSTimerZone.Kind.STOP)
 	stop.set_box(Vector3(50.0, -2.0, -4.0), Vector3(52.0, 4.0, 4.0))
 	set.add(stop)
 
@@ -1111,17 +1111,17 @@ func _test_stop_and_death() -> void:
 	_check(timer.runs_finished == 0, "and a stop zone ends it before the finish")
 
 	# Death.
-	var dying := DotTimer.new()
+	var dying := GSTimer.new()
 	dying.authoritative = true
 	dying.bind(_corridor(), 128)
 
 	var reasons := PackedStringArray()
 	dying.run_stopped.connect(
-		func(_run: DotTimerRun, reason: StringName) -> void:
+		func(_run: GSTimerRun, reason: StringName) -> void:
 			reasons.append(String(reason))
 	)
 
-	var sample := DotTimerSample.new()
+	var sample := GSTimerSample.new()
 	sample.grounded = true
 
 	for i in range(200):
@@ -1143,12 +1143,12 @@ func _test_stop_and_death() -> void:
 func _test_style_change_abandons() -> void:
 	_section("changing style mid-run")
 
-	var timer := DotTimer.new()
+	var timer := GSTimer.new()
 	timer.authoritative = true
 	timer.bind(_corridor(), 128)
-	timer.style = DotTimerStyle.defaults()[0]
+	timer.style = GSTimerStyle.defaults()[0]
 
-	var sample := DotTimerSample.new()
+	var sample := GSTimerSample.new()
 	sample.grounded = true
 
 	for i in range(100):
@@ -1160,17 +1160,17 @@ func _test_style_change_abandons() -> void:
 
 	var stopped := [0]
 	timer.run_stopped.connect(
-		func(_run: DotTimerRun, _reason: StringName) -> void: stopped[0] += 1
+		func(_run: GSTimerRun, _reason: StringName) -> void: stopped[0] += 1
 	)
 
-	timer.set_style(DotTimerStyle.defaults()[1])
+	timer.set_style(GSTimerStyle.defaults()[1])
 
 	_check(stopped[0] == 1, "switching style abandons it")
 	_check(not timer.run.is_active(), "and there is no run in progress")
 
-	timer.set_track(DotTimerTrack.of_bonus(1))
+	timer.set_track(GSTimerTrack.of_bonus(1))
 	_check(
-		timer.track == DotTimerTrack.of_bonus(1), "switching track works"
+		timer.track == GSTimerTrack.of_bonus(1), "switching track works"
 	)
 	_done()
 
@@ -1180,19 +1180,19 @@ func _test_minimum_time() -> void:
 
 	# A start and a finish drawn overlapping, which is the classic way to
 	# manufacture an unbeatable world record.
-	var cheat := DotTimerZoneSet.new()
+	var cheat := GSTimerZoneSet.new()
 	cheat.map_id = &"cheat"
-	cheat.add(DotTimerZone.make(DotTimerZone.Kind.START).set_box(
+	cheat.add(GSTimerZone.make(GSTimerZone.Kind.START).set_box(
 		Vector3(0.0, -2.0, -4.0), Vector3(2.0, 4.0, 4.0)
 	))
 	# Twenty metres apart, so at 10 m/s the run takes two seconds: under the main
 	# track's 3.5 second floor and over a bonus's, which is what makes the pair of
 	# checks below a test of the floor rather than of zero.
-	cheat.add(DotTimerZone.make(DotTimerZone.Kind.END).set_box(
+	cheat.add(GSTimerZone.make(GSTimerZone.Kind.END).set_box(
 		Vector3(22.0, -2.0, -4.0), Vector3(24.0, 4.0, 4.0)
 	))
 
-	var style := DotTimerStyle.new()
+	var style := GSTimerStyle.new()
 	style.minimum_time = 3.5
 
 	var timer := _walk(cheat, 128, 10.0, -2.0, 30.0, style)
@@ -1204,14 +1204,14 @@ func _test_minimum_time() -> void:
 
 	_check(not allowed.ok, "and the record is refused")
 	_check(
-		allowed.ok or allowed.code() == DotError.CODE_INVALID,
+		allowed.ok or allowed.code() == GSError.CODE_INVALID,
 		"as invalid rather than as an internal error"
 	)
 
 	# A bonus has its own, much lower floor, because bonuses really are that short.
 	style.minimum_bonus_time = 0.5
-	timer.track = DotTimerTrack.of_bonus(1)
-	timer.run.track = DotTimerTrack.of_bonus(1)
+	timer.track = GSTimerTrack.of_bonus(1)
+	timer.run.track = GSTimerTrack.of_bonus(1)
 
 	_check(
 		timer.can_record(timer.run).ok,
@@ -1227,35 +1227,35 @@ func _test_entry_zones_reach_the_host() -> void:
 
 	var set := _corridor()
 
-	var pit := DotTimerZone.make(DotTimerZone.Kind.RESPAWN)
+	var pit := GSTimerZone.make(GSTimerZone.Kind.RESPAWN)
 	pit.set_box(Vector3(30.0, -2.0, -4.0), Vector3(36.0, 4.0, 4.0))
 	set.add(pit)
 
-	var door := DotTimerZone.make(DotTimerZone.Kind.TELEPORT)
+	var door := GSTimerZone.make(GSTimerZone.Kind.TELEPORT)
 	door.set_box(Vector3(60.0, -2.0, -4.0), Vector3(64.0, 4.0, 4.0))
 	door.destination = Vector3(80.0, 0.0, 0.0)
 	set.add(door)
 
 	# On a bonus track, so the track filter is under test rather than assumed. A
 	# main-track runner walking past it must not be respawned by somebody else's pit.
-	var other := DotTimerZone.make(
-		DotTimerZone.Kind.RESPAWN, DotTimerTrack.BONUS_FIRST
+	var other := GSTimerZone.make(
+		GSTimerZone.Kind.RESPAWN, GSTimerTrack.BONUS_FIRST
 	)
 	other.set_box(Vector3(70.0, -2.0, -4.0), Vector3(74.0, 4.0, 4.0))
 	set.add(other)
 
-	var timer := DotTimer.new()
+	var timer := GSTimer.new()
 	timer.bind(set, 128)
 
 	# An Array, not an int: a lambda captures locals by value, so a counter
 	# incremented in a handler reads zero outside it and the test reports a failure
 	# for a signal that fired perfectly.
-	var seen: Array[DotTimerZone] = []
+	var seen: Array[GSTimerZone] = []
 	timer.effect_requested.connect(
-		func(zone: DotTimerZone) -> void: seen.append(zone)
+		func(zone: GSTimerZone) -> void: seen.append(zone)
 	)
 
-	var sample := DotTimerSample.new()
+	var sample := GSTimerSample.new()
 	sample.grounded = true
 
 	# Walked through all four volumes in one pass, at a speed that puts several ticks
@@ -1271,30 +1271,30 @@ func _test_entry_zones_reach_the_host() -> void:
 		kinds.append(zone.kind)
 
 	_check(
-		kinds.has(DotTimerZone.Kind.RESPAWN),
+		kinds.has(GSTimerZone.Kind.RESPAWN),
 		"a respawn zone asks the host to act"
 	)
 	_check(
-		kinds.has(DotTimerZone.Kind.TELEPORT),
+		kinds.has(GSTimerZone.Kind.TELEPORT),
 		"and so does a teleport zone"
 	)
 	_check(seen.size() == 2, "once each, on entry", "%d requests" % seen.size())
 	_check(
-		not kinds.has(DotTimerZone.Kind.START)
-		and not kinds.has(DotTimerZone.Kind.STAGE),
+		not kinds.has(GSTimerZone.Kind.START)
+		and not kinds.has(GSTimerZone.Kind.STAGE),
 		"and the zones the timer acts on itself are not sent to the host"
 	)
 
 	for zone in seen:
 		_check(
-			zone.track == DotTimerTrack.MAIN,
+			zone.track == GSTimerTrack.MAIN,
 			"a bonus track's pit does not respawn a main-track runner"
 		)
 
 	# The destination travels with it: a host that had to look the zone up again
 	# would be reading a set that may have changed under a map vote.
 	for zone in seen:
-		if zone.kind == DotTimerZone.Kind.TELEPORT:
+		if zone.kind == GSTimerZone.Kind.TELEPORT:
 			_check(
 				zone.destination.is_equal_approx(Vector3(80.0, 0.0, 0.0)),
 				"and a teleport carries where it sends the player"
@@ -1317,7 +1317,7 @@ func _test_entry_zones_reach_the_host() -> void:
 func _test_store() -> void:
 	_section("the records store")
 
-	var store := DotTimerStoreMemory.new()
+	var store := GSTimerStoreMemory.new()
 
 	var first := _record(&"alice", 30.0)
 	var wrote := store.put(first)
@@ -1330,8 +1330,8 @@ func _test_store() -> void:
 
 	_check(second.ok, "a slower run by the same player is not an error")
 	_check(
-		second.value["previous"] is DotTimerRecord
-			and is_equal_approx((second.value["previous"] as DotTimerRecord).time, 30.0)
+		second.value["previous"] is GSTimerRecord
+			and is_equal_approx((second.value["previous"] as GSTimerRecord).time, 30.0)
 			and not bool(second.value["improved"]),
 		"and reports the record it did not beat"
 	)
@@ -1339,7 +1339,7 @@ func _test_store() -> void:
 	var top := store.top(&"m", 0, &"normal", 10)
 	_check((top.value as Array).size() == 1, "the board still has one row")
 	_check_near(
-		(top.value[0] as DotTimerRecord).time, 30.0, 0.0001,
+		(top.value[0] as GSTimerRecord).time, 30.0, 0.0001,
 		"and it is the faster time"
 	)
 
@@ -1348,7 +1348,7 @@ func _test_store() -> void:
 
 	top = store.top(&"m", 0, &"normal", 10)
 	_check_near(
-		(top.value[0] as DotTimerRecord).time, 25.0, 0.0001,
+		(top.value[0] as GSTimerRecord).time, 25.0, 0.0001,
 		"a faster run replaces it"
 	)
 
@@ -1358,9 +1358,9 @@ func _test_store() -> void:
 	top = store.top(&"m", 0, &"normal", 10)
 	_check((top.value as Array).size() == 3, "three players, three rows")
 	_check(
-		(top.value[0] as DotTimerRecord).player_id == &"alice"
-		and (top.value[1] as DotTimerRecord).player_id == &"bob"
-		and (top.value[2] as DotTimerRecord).player_id == &"carol",
+		(top.value[0] as GSTimerRecord).player_id == &"alice"
+		and (top.value[1] as GSTimerRecord).player_id == &"bob"
+		and (top.value[2] as GSTimerRecord).player_id == &"carol",
 		"sorted fastest first"
 	)
 
@@ -1375,13 +1375,13 @@ func _test_store() -> void:
 	_done()
 
 
-func _check_store_ties_and_styles(store: DotTimerStoreMemory) -> void:
+func _check_store_ties_and_styles(store: GSTimerStoreMemory) -> void:
 	# A tie does not displace the incumbent: an equal time is not an improvement.
 	store.put(_record(&"dave", 25.0))
 	var top := store.top(&"m", 0, &"normal", 10)
 	_check(
-		(top.value[0] as DotTimerRecord).player_id == &"alice"
-		or (top.value[0] as DotTimerRecord).time == 25.0,
+		(top.value[0] as GSTimerRecord).player_id == &"alice"
+		or (top.value[0] as GSTimerRecord).time == 25.0,
 		"a tie sits alongside rather than overwriting"
 	)
 
@@ -1412,7 +1412,7 @@ func _check_store_ties_and_styles(store: DotTimerStoreMemory) -> void:
 func _test_store_filenames() -> void:
 	_section("records files cannot collide")
 
-	var store := DotTimerStoreFile.at("user://test_records")
+	var store := GSTimerStoreFile.at("user://test_records")
 
 	# The bug this guards: `is_valid_identifier()` is false for a digit, so digits in a map id became underscores and `surf_kitsune2`/`surf_kitsune3` shared one records file.
 	var a := store.path_for(&"surf_kitsune2", 0, &"normal")
@@ -1446,11 +1446,11 @@ func _test_store_filenames() -> void:
 		dots)
 
 	var tracks := {}
-	for track in range(DotTimerTrack.COUNT):
+	for track in range(GSTimerTrack.COUNT):
 		tracks[store.path_for(&"m", track, &"normal")] = true
 
 	_check(
-		tracks.size() == DotTimerTrack.COUNT,
+		tracks.size() == GSTimerTrack.COUNT,
 		"and every track has its own file"
 	)
 	_done()
@@ -1459,30 +1459,30 @@ func _test_store_filenames() -> void:
 func _test_manager() -> void:
 	_section("the manager")
 
-	var manager := DotTimerManager.new()
+	var manager := GSTimerManager.new()
 	manager.authoritative = true
 	manager.tick_rate = 128
-	manager.store = DotTimerStoreMemory.new()
+	manager.store = GSTimerStoreMemory.new()
 	manager.record_replays = true
 	add_child(manager)
 
 	manager.set_zones(_corridor())
 
-	var styles := DotTimerStyle.defaults()
+	var styles := GSTimerStyle.defaults()
 	styles[0].minimum_time = 0.0
 	manager.set_styles(styles)
 
 	manager.add_player(&"p1", "Player One")
 
-	var accepted: Array[DotTimerRecord] = []
+	var accepted: Array[GSTimerRecord] = []
 	var refused := PackedStringArray()
 
 	manager.record_accepted.connect(
-		func(record: DotTimerRecord, _previous: DotTimerRecord, _rank: int) -> void:
+		func(record: GSTimerRecord, _previous: GSTimerRecord, _rank: int) -> void:
 			accepted.append(record)
 	)
 	manager.record_refused.connect(
-		func(_id: StringName, _run: DotTimerRun, reason: String) -> void:
+		func(_id: StringName, _run: GSTimerRun, reason: String) -> void:
 			refused.append(reason)
 	)
 
@@ -1511,7 +1511,7 @@ func _test_manager() -> void:
 		)
 
 	# An unranked style times and refuses, and says so.
-	var unranked := DotTimerStyle.new()
+	var unranked := GSTimerStyle.new()
 	unranked.id = &"joke"
 	unranked.ranked = false
 
@@ -1540,7 +1540,7 @@ func _test_manager() -> void:
 func _test_tick_rate_configuration() -> void:
 	_section("the tick rate is configuration, not a constant")
 
-	var config := DotTimerConfig.new()
+	var config := GSTimerConfig.new()
 
 	_check(config.validate().ok, "the default configuration is valid")
 	_check(
@@ -1562,12 +1562,12 @@ func _test_tick_rate_configuration() -> void:
 	config.tick_rate = -1
 	_check(not config.validate().ok, "and a negative rate is refused")
 
-	# The layering every DotConfig has, which is the whole reason this is a
-	# DotConfig: an operator changes it in a file or on the command line without an
+	# The layering every GSConfig has, which is the whole reason this is a
+	# GSConfig: an operator changes it in a file or on the command line without an
 	# editor and without a rebuild.
-	var layered := DotTimerConfig.new()
+	var layered := GSTimerConfig.new()
 
-	# apply_dictionary returns the keys it CHANGED, not a DotResult — a layer that
+	# apply_dictionary returns the keys it CHANGED, not a GSResult — a layer that
 	# matched nothing is not a failure, it is a layer that had nothing to say.
 	var applied := layered.apply_dictionary({
 		"tick_rate": 64, "record_replays": false, "records_directory": ""
@@ -1585,19 +1585,19 @@ func _test_tick_rate_configuration() -> void:
 
 	# The manager half: changing the rate must abandon runs rather than reinterpret
 	# the ticks already banked.
-	var manager := DotTimerManager.new()
+	var manager := GSTimerManager.new()
 	manager.authoritative = true
 	manager.tick_rate = 128
-	manager.store = DotTimerStoreMemory.new()
+	manager.store = GSTimerStoreMemory.new()
 	add_child(manager)
 
 	manager.set_zones(_corridor())
-	manager.set_styles(DotTimerStyle.defaults())
+	manager.set_styles(GSTimerStyle.defaults())
 	manager.add_player(&"p1", "One")
 
 	var abandoned := [0]
 	manager.player_stopped.connect(
-		func(_id: StringName, _run: DotTimerRun, _reason: StringName) -> void:
+		func(_id: StringName, _run: GSTimerRun, _reason: StringName) -> void:
 			abandoned[0] += 1
 	)
 
@@ -1643,12 +1643,12 @@ func _test_tick_rate_configuration() -> void:
 
 	# A record carries the rate it was set at, which is what lets a dispute be
 	# settled afterwards.
-	var run := DotTimerRun.make(0, &"normal", 1.0 / 64.0)
+	var run := GSTimerRun.make(0, &"normal", 1.0 / 64.0)
 	run.begin(0.0)
 	run.ticks = 640
 	run.finish(0.0)
 
-	var record := DotTimerRecord.from_run(run, &"m", &"p", "P")
+	var record := GSTimerRecord.from_run(run, &"m", &"p", "P")
 	_check(record.tick_rate == 64, "and a record records it", "%d" % record.tick_rate)
 	_check_near(record.time, 10.0, 0.001, "with the time that rate implies")
 
@@ -1659,15 +1659,15 @@ func _test_tick_rate_configuration() -> void:
 func _test_checkpoints_practice() -> void:
 	_section("practice checkpoints")
 
-	var manager := DotTimerManager.new()
+	var manager := GSTimerManager.new()
 	manager.authoritative = true
 	manager.tick_rate = 128
-	manager.store = DotTimerStoreMemory.new()
+	manager.store = GSTimerStoreMemory.new()
 	add_child(manager)
 
 	manager.set_zones(_corridor())
 
-	var styles := DotTimerStyle.defaults()
+	var styles := GSTimerStyle.defaults()
 	styles[0].minimum_time = 0.0
 	styles[0].allow_checkpoints = true
 	manager.set_styles(styles)
@@ -1737,7 +1737,7 @@ func _test_checkpoints_practice() -> void:
 	)
 
 	# A style change does NOT take the set away: practice is how a map is learned; the style decides what using one costs.
-	var strict := DotTimerStyle.new()
+	var strict := GSTimerStyle.new()
 	strict.id = &"strict"
 	strict.allow_checkpoints = false
 
@@ -1786,7 +1786,7 @@ func _test_checkpoints_practice() -> void:
 	manager.set_player_style(&"p1", &"normal")
 	checkpoints.save(Vector3(7.0, 8.0, 9.0), Vector3(1.0, 2.0, 3.0), 45.0, -10.0)
 
-	var back := DotTimerCheckpoints.from_dictionary(checkpoints.to_dictionary())
+	var back := GSTimerCheckpoints.from_dictionary(checkpoints.to_dictionary())
 
 	_check(back.count() == checkpoints.count(), "a set round-trips")
 	_check(
@@ -1802,11 +1802,11 @@ func _test_checkpoints_practice() -> void:
 func _test_painter() -> void:
 	_section("drawing zones from inside the game")
 
-	var set := DotTimerZoneSet.new()
+	var set := GSTimerZoneSet.new()
 	set.map_id = &"drawn"
 
-	var painter := DotTimerZonePainter.on(set)
-	painter.begin(DotTimerZone.Kind.START, DotTimerTrack.MAIN)
+	var painter := GSTimerZonePainter.on(set)
+	painter.begin(GSTimerZone.Kind.START, GSTimerTrack.MAIN)
 
 	var first := painter.mark(Vector3(0.0, 0.0, 0.0))
 	_check(first.ok and first.value == null, "the first corner is taken")
@@ -1816,13 +1816,13 @@ func _test_painter() -> void:
 	_check(second.ok and second.value != null, "the second completes the zone")
 	_check(not painter.is_drawing(), "and the painter is idle again")
 
-	var zone: DotTimerZone = second.value
+	var zone: GSTimerZone = second.value
 
 	# Both corners are marked at the player's feet, so without the added height every
 	# zone drawn this way would be a flat sheet nothing ever enters. This is the
 	# single most common mistake in hand-drawn zones.
 	_check(
-		zone.size().y >= DotTimerZonePainter.DEFAULT_HEIGHT,
+		zone.size().y >= GSTimerZonePainter.DEFAULT_HEIGHT,
 		"with height added above the marked corners",
 		"%.2f m" % zone.size().y
 	)
@@ -1831,7 +1831,7 @@ func _test_painter() -> void:
 		"so a standing player is inside it"
 	)
 
-	painter.begin(DotTimerZone.Kind.END, DotTimerTrack.MAIN)
+	painter.begin(GSTimerZone.Kind.END, GSTimerTrack.MAIN)
 	painter.mark(Vector3(50.0, 0.0, 0.0))
 	painter.mark(Vector3(54.0, 0.0, 4.0))
 
@@ -1844,12 +1844,12 @@ func _test_painter() -> void:
 	_check(set.zones.size() == 1, "and is gone")
 
 	# Ids are never reused, so a replay's crossing marks keep meaning what they meant.
-	painter.begin(DotTimerZone.Kind.END, DotTimerTrack.MAIN)
+	painter.begin(GSTimerZone.Kind.END, GSTimerTrack.MAIN)
 	painter.mark(Vector3(60.0, 0.0, 0.0))
 	var redrawn := painter.mark(Vector3(64.0, 0.0, 4.0))
 
 	_check(
-		(redrawn.value as DotTimerZone).id != (undone.value as DotTimerZone).id,
+		(redrawn.value as GSTimerZone).id != (undone.value as GSTimerZone).id,
 		"and a redrawn zone gets a new id rather than the deleted one's"
 	)
 
@@ -1858,18 +1858,18 @@ func _test_painter() -> void:
 
 	painter.mark_point(Vector3(2.0, 0.0, 2.0), 0.0)
 	_check(
-		set.of_kind(DotTimerZone.Kind.SPAWN, DotTimerTrack.MAIN).size() == 1,
+		set.of_kind(GSTimerZone.Kind.SPAWN, GSTimerTrack.MAIN).size() == 1,
 		"and re-marking it replaces rather than adds"
 	)
 
 	_check(
-		not painter.begin(DotTimerZone.Kind.START, -1).ok,
+		not painter.begin(GSTimerZone.Kind.START, -1).ok,
 		"an invalid track is refused"
 	)
 	_done()
 
 
-## A stand-in for GameSpice Net's bit writer and reader: [method DotTimerTrack.write_wire] only
+## A stand-in for GameSpice Net's bit writer and reader: [method GSTimerTrack.write_wire] only
 ## calls write_uint / read_uint, and GameSpice Net is not a dependency of this suite.
 class _BitWire extends RefCounted:
 	var _fields: Array = []

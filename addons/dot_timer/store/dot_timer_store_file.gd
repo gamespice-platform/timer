@@ -1,8 +1,8 @@
-class_name DotTimerStoreFile
-extends DotTimerStoreMemory
+class_name GSTimerStoreFile
+extends GSTimerStoreMemory
 
 ## Records in JSON files under a directory, one file per board, written atomically; side tables are underscore-prefixed files.
-## Extends the memory store for the shared logic. Not for thousands of players: it reads and writes a whole board; use [DotTimerStoreSql].
+## Extends the memory store for the shared logic. Not for thousands of players: it reads and writes a whole board; use [GSTimerStoreSql].
 
 const FILE_CHANNEL := "timer.store.file"
 
@@ -29,7 +29,7 @@ var _extras_dirty: Dictionary = {}
 const EXTRAS := ["players", "maps", "history", "progress", "resume"]
 
 
-static func at(path: String) -> DotTimerStoreFile:
+static func at(path: String) -> GSTimerStoreFile:
 	# Not this class's own name. A script that names itself in an expression, loaded after
 	# its base, cuts Godot 4.7.2's exit teardown short and leaks every script loaded before
 	# it. See docs/gdscript-hazards.md, "A script that names itself".
@@ -63,7 +63,7 @@ const SAFE_CHARS := (
 
 
 ## A path component that cannot escape [member directory] and cannot collide.
-## Public and the only sanitiser here: [DotTimerManager] uses it for replay names. Explicit alphabet; a hash of the original id is appended whenever anything was replaced.
+## Public and the only sanitiser here: [GSTimerManager] uses it for replay names. Explicit alphabet; a hash of the original id is appended whenever anything was replaced.
 static func safe_component(text: String) -> String:
 	var out := ""
 
@@ -81,7 +81,7 @@ static func safe_component(text: String) -> String:
 	if out == text:
 		return out
 
-	return "%s-%s" % [out, DotHash.sha256_text(text).substr(0, 8)]
+	return "%s-%s" % [out, GSHash.sha256_text(text).substr(0, 8)]
 
 
 ## Reads a board off disk if it has not been read yet.
@@ -105,7 +105,7 @@ func _read_board_file(path: String) -> void:
 	var parsed: Variant = _read_json(path)
 
 	if not (parsed is Dictionary):
-		DotLog.warn(FILE_CHANNEL, "a records file is not a JSON object", {"path": path})
+		GSLog.warn(FILE_CHANNEL, "a records file is not a JSON object", {"path": path})
 		return
 
 	var rows_value: Variant = (parsed as Dictionary).get("records", [])
@@ -115,7 +115,7 @@ func _read_board_file(path: String) -> void:
 
 	for entry in (rows_value as Array):
 		if entry is Dictionary:
-			var record := DotTimerRecord.from_dictionary(entry)
+			var record := GSTimerRecord.from_dictionary(entry)
 			_loaded[record.board_key()] = true
 			_insert_loaded(record)
 
@@ -140,7 +140,7 @@ func _ensure_all_loaded() -> void:
 		if not (parsed is Dictionary):
 			continue
 		var data: Dictionary = parsed
-		var board := DotTimerRecord.board_key_of(
+		var board := GSTimerRecord.board_key_of(
 			StringName(str(data.get("map", ""))), int(data.get("track", 0)),
 			StringName(str(data.get("style", "normal"))), int(data.get("stage", 0))
 		)
@@ -177,7 +177,7 @@ func _ensure_extras() -> void:
 					for entry in list:
 						if entry is Dictionary and entry.get("record") is Dictionary:
 							var copy: Dictionary = (entry as Dictionary).duplicate()
-							copy["record"] = DotTimerRecord.from_dictionary(entry["record"])
+							copy["record"] = GSTimerRecord.from_dictionary(entry["record"])
 							_history.append(copy)
 
 
@@ -190,7 +190,7 @@ static func _read_json(path: String) -> Variant:
 		return null
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		DotLog.warn(FILE_CHANNEL, "could not open a records file", {"path": path})
+		GSLog.warn(FILE_CHANNEL, "could not open a records file", {"path": path})
 		return null
 	var text := file.get_as_text()
 	file.close()
@@ -198,15 +198,15 @@ static func _read_json(path: String) -> Variant:
 
 
 func _mark(record_or_parts: Variant) -> void:
-	if record_or_parts is DotTimerRecord:
-		var r: DotTimerRecord = record_or_parts
+	if record_or_parts is GSTimerRecord:
+		var r: GSTimerRecord = record_or_parts
 		_dirty[r.board_key()] = [r.map_id, r.track, r.style_id, r.stage]
 
 
 
-func put(record: DotTimerRecord) -> DotResult:
+func put(record: GSTimerRecord) -> GSResult:
 	if record == null:
-		return DotResult.fail(DotError.CODE_INVALID, "No record to store.")
+		return GSResult.fail(GSError.CODE_INVALID, "No record to store.")
 
 	_ensure_loaded(record.map_id, record.track, record.style_id, record.stage)
 	_ensure_extras()
@@ -225,7 +225,7 @@ func put(record: DotTimerRecord) -> DotResult:
 func top(
 	map_id: StringName, track: int, style_id: StringName,
 	limit: int = 10, offset: int = 0, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	_ensure_loaded(map_id, track, style_id, stage)
 	return super.top(map_id, track, style_id, limit, offset, stage)
 
@@ -233,7 +233,7 @@ func top(
 func best_for(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	_ensure_loaded(map_id, track, style_id, stage)
 	return super.best_for(map_id, track, style_id, player_id, stage)
 
@@ -241,7 +241,7 @@ func best_for(
 func rank_of(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	_ensure_loaded(map_id, track, style_id, stage)
 	return super.rank_of(map_id, track, style_id, player_id, stage)
 
@@ -249,14 +249,14 @@ func rank_of(
 func rank_for_time(
 	map_id: StringName, track: int, style_id: StringName,
 	time: float, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	_ensure_loaded(map_id, track, style_id, stage)
 	return super.rank_for_time(map_id, track, style_id, time, stage)
 
 
 func count_on(
 	map_id: StringName, track: int, style_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	_ensure_loaded(map_id, track, style_id, stage)
 	return super.count_on(map_id, track, style_id, stage)
 
@@ -264,7 +264,7 @@ func count_on(
 func remove(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	_ensure_loaded(map_id, track, style_id, stage)
 
 	var result := super.remove(map_id, track, style_id, player_id, stage)
@@ -275,47 +275,47 @@ func remove(
 	return result
 
 
-func set_points(records: Array) -> DotResult:
+func set_points(records: Array) -> GSResult:
 	for record in records:
-		if record is DotTimerRecord:
+		if record is GSTimerRecord:
 			_ensure_loaded(record.map_id, record.track, record.style_id, record.stage)
 	var result := super.set_points(records)
 	for record in records:
-		if record is DotTimerRecord:
+		if record is GSTimerRecord:
 			_mark(record)
 	return result
 
 
-func records_of(player_id: StringName, filter: Dictionary = {}) -> DotResult:
+func records_of(player_id: StringName, filter: Dictionary = {}) -> GSResult:
 	_ensure_all_loaded()
 	return super.records_of(player_id, filter)
 
 
-func records_on_map(map_id: StringName) -> DotResult:
+func records_on_map(map_id: StringName) -> GSResult:
 	_ensure_all_loaded()
 	return super.records_on_map(map_id)
 
 
-func record_count(player_id: StringName, filter: Dictionary = {}) -> DotResult:
+func record_count(player_id: StringName, filter: Dictionary = {}) -> GSResult:
 	_ensure_all_loaded()
 	return super.record_count(player_id, filter)
 
 
-func recent(limit: int = 20, filter: Dictionary = {}) -> DotResult:
+func recent(limit: int = 20, filter: Dictionary = {}) -> GSResult:
 	_ensure_extras()
 	return super.recent(limit, filter)
 
 
 func wipe_board(
 	map_id: StringName, track: int, style_id: StringName, stage: int = -1
-) -> DotResult:
+) -> GSResult:
 	_ensure_all_loaded()
 	var doomed: Array = []
 	for board in _boards:
 		var rows: Array = _boards[board]
 		if rows.is_empty():
 			continue
-		var r: DotTimerRecord = rows[0]
+		var r: GSTimerRecord = rows[0]
 		if r.map_id == map_id and r.track == track and r.style_id == style_id and (stage < 0 or r.stage == stage):
 			doomed.append([r.map_id, r.track, r.style_id, r.stage])
 	var result := super.wipe_board(map_id, track, style_id, stage)
@@ -324,13 +324,13 @@ func wipe_board(
 	return result
 
 
-func wipe_player(player_id: StringName) -> DotResult:
+func wipe_player(player_id: StringName) -> GSResult:
 	_ensure_all_loaded()
 	_ensure_extras()
 	var touched: Array = []
 	for board in _rows:
 		var found: Variant = (_rows[board] as Dictionary).get(player_id)
-		if found is DotTimerRecord:
+		if found is GSTimerRecord:
 			touched.append(found)
 	var result := super.wipe_player(player_id)
 	for record in touched:
@@ -340,14 +340,14 @@ func wipe_player(player_id: StringName) -> DotResult:
 	return result
 
 
-func wipe_map(map_id: StringName) -> DotResult:
+func wipe_map(map_id: StringName) -> GSResult:
 	_ensure_all_loaded()
 	_ensure_extras()
 	var doomed: Array = []
 	for board in _boards:
 		var rows: Array = _boards[board]
-		if not rows.is_empty() and (rows[0] as DotTimerRecord).map_id == map_id:
-			var r: DotTimerRecord = rows[0]
+		if not rows.is_empty() and (rows[0] as GSTimerRecord).map_id == map_id:
+			var r: GSTimerRecord = rows[0]
 			doomed.append([r.map_id, r.track, r.style_id, r.stage])
 	var result := super.wipe_map(map_id)
 	for parts in doomed:
@@ -362,54 +362,54 @@ func _delete_board_file(parts: Array) -> void:
 	_dirty.erase(_key(parts[0], parts[1], parts[2], parts[3]))
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)
-		DotWeb.sync_filesystem()
+		GSWeb.sync_filesystem()
 
 
 
 func note_player(
 	player_id: StringName, name: String, seen_at: int, playtime_add: float = 0.0
-) -> DotResult:
+) -> GSResult:
 	_ensure_extras()
 	_extras_dirty["players"] = true
 	return super.note_player(player_id, name, seen_at, playtime_add)
 
 
-func player_info(player_id: StringName) -> DotResult:
+func player_info(player_id: StringName) -> GSResult:
 	_ensure_extras()
 	return super.player_info(player_id)
 
 
 func refresh_player_points(
 	player_ids: Array, weighting: float = 1.0, limit: int = 0
-) -> DotResult:
+) -> GSResult:
 	_ensure_all_loaded()
 	_ensure_extras()
 	_extras_dirty["players"] = true
 	return super.refresh_player_points(player_ids, weighting, limit)
 
 
-func top_players(limit: int = 10, offset: int = 0) -> DotResult:
+func top_players(limit: int = 10, offset: int = 0) -> GSResult:
 	_ensure_extras()
 	return super.top_players(limit, offset)
 
 
-func player_rank(player_id: StringName) -> DotResult:
+func player_rank(player_id: StringName) -> GSResult:
 	_ensure_extras()
 	return super.player_rank(player_id)
 
 
-func put_map(info: Dictionary) -> DotResult:
+func put_map(info: Dictionary) -> GSResult:
 	_ensure_extras()
 	_extras_dirty["maps"] = true
 	return super.put_map(info)
 
 
-func map_info(map_id: StringName) -> DotResult:
+func map_info(map_id: StringName) -> GSResult:
 	_ensure_extras()
 	return super.map_info(map_id)
 
 
-func maps() -> DotResult:
+func maps() -> GSResult:
 	_ensure_extras()
 	return super.maps()
 
@@ -417,7 +417,7 @@ func maps() -> DotResult:
 func note_progress(
 	player_id: StringName, map_id: StringName, track: int, style_id: StringName,
 	attempts: int, seconds: float, finished: bool
-) -> DotResult:
+) -> GSResult:
 	_ensure_extras()
 	_extras_dirty["progress"] = true
 	return super.note_progress(player_id, map_id, track, style_id, attempts, seconds, finished)
@@ -425,18 +425,18 @@ func note_progress(
 
 func progress_for(
 	player_id: StringName, map_id: StringName, track: int, style_id: StringName
-) -> DotResult:
+) -> GSResult:
 	_ensure_extras()
 	return super.progress_for(player_id, map_id, track, style_id)
 
 
-func save_resume(player_id: StringName, map_id: StringName, state: Dictionary) -> DotResult:
+func save_resume(player_id: StringName, map_id: StringName, state: Dictionary) -> GSResult:
 	_ensure_extras()
 	_extras_dirty["resume"] = true
 	return super.save_resume(player_id, map_id, state)
 
 
-func take_resume(player_id: StringName, map_id: StringName) -> DotResult:
+func take_resume(player_id: StringName, map_id: StringName) -> GSResult:
 	_ensure_extras()
 	_extras_dirty["resume"] = true
 	return super.take_resume(player_id, map_id)
@@ -469,10 +469,10 @@ func pending_count() -> int:
 
 
 ## Writes up to [member flush_batch] dirty boards, then the side files.
-## Called by [DotTimerManager] on its own interval and when it leaves the tree; a record in memory reads back like one on disk until the process ends.
-func flush() -> DotResult:
+## Called by [GSTimerManager] on its own interval and when it leaves the tree; a record in memory reads back like one on disk until the process ends.
+func flush() -> GSResult:
 	if not has_pending():
-		return DotResult.success(0)
+		return GSResult.success(0)
 
 	var written := 0
 	var attempted := 0
@@ -503,28 +503,28 @@ func flush() -> DotResult:
 			failures.append("_%s: %s" % [name, wrote.error.message])
 
 	if written > 0:
-		DotWeb.sync_filesystem()
+		GSWeb.sync_filesystem()
 
 	if not failures.is_empty():
-		return DotResult.fail(
-			DotError.CODE_IO,
+		return GSResult.fail(
+			GSError.CODE_IO,
 			"Some record files could not be written.",
 			", ".join(failures)
 		)
 
-	return DotResult.success(written)
+	return GSResult.success(written)
 
 
 func _write_board(
 	map_id: StringName, track: int, style_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	var rows: Array = []
 
 	for record in _board(map_id, track, style_id, stage):
-		rows.append((record as DotTimerRecord).to_dictionary())
+		rows.append((record as GSTimerRecord).to_dictionary())
 
 	return _write_json(path_for(map_id, track, style_id, stage), {
-		"format": DotTimerRecord.FORMAT_VERSION,
+		"format": GSTimerRecord.FORMAT_VERSION,
 		"map": String(map_id),
 		"track": track,
 		"style": String(style_id),
@@ -533,7 +533,7 @@ func _write_board(
 	})
 
 
-func _write_extra(name: String) -> DotResult:
+func _write_extra(name: String) -> GSResult:
 	var data: Dictionary = {}
 	match name:
 		"players":
@@ -550,7 +550,7 @@ func _write_extra(name: String) -> DotResult:
 			var entries: Array = []
 			for entry in _history:
 				var copy: Dictionary = entry.duplicate()
-				copy["record"] = (entry["record"] as DotTimerRecord).to_dictionary()
+				copy["record"] = (entry["record"] as GSTimerRecord).to_dictionary()
 				entries.append(copy)
 			data = {"entries": entries}
 	return _write_json(_extra_path(name), data)
@@ -559,21 +559,21 @@ func _write_extra(name: String) -> DotResult:
 ## Writes to a temporary name and renames. A records file is the one thing on a timer
 ## server that cannot be regenerated, and a process killed mid-write must leave the
 ## previous version intact.
-func _write_json(path: String, data: Dictionary) -> DotResult:
+func _write_json(path: String, data: Dictionary) -> GSResult:
 	# An empty directory makes every path relative to the working directory (a stray `_maps.json` in a project root). "No files" is a memory store, never this one.
 	if directory.strip_edges() == "":
-		return DotResult.failure(DotError.from_engine(ERR_INVALID_PARAMETER, "DotTimerStoreFile.directory is empty"))
+		return GSResult.failure(GSError.from_engine(ERR_INVALID_PARAMETER, "GSTimerStoreFile.directory is empty"))
 	if not DirAccess.dir_exists_absolute(directory):
 		var made := DirAccess.make_dir_recursive_absolute(directory)
 		if made != OK:
-			return DotResult.failure(DotError.from_engine(made, directory))
+			return GSResult.failure(GSError.from_engine(made, directory))
 
 	var temporary := path + ".tmp"
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 
 	if file == null:
-		return DotResult.failure(
-			DotError.from_engine(FileAccess.get_open_error(), temporary)
+		return GSResult.failure(
+			GSError.from_engine(FileAccess.get_open_error(), temporary)
 		)
 
 	file.store_string(JSON.stringify(data, "  "))
@@ -582,9 +582,9 @@ func _write_json(path: String, data: Dictionary) -> DotResult:
 	var renamed := DirAccess.rename_absolute(temporary, path)
 
 	if renamed != OK:
-		return DotResult.failure(DotError.from_engine(renamed, path))
+		return GSResult.failure(GSError.from_engine(renamed, path))
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func describe() -> Dictionary:

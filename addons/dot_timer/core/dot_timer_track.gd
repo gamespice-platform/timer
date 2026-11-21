@@ -1,4 +1,4 @@
-class_name DotTimerTrack
+class_name GSTimerTrack
 extends RefCounted
 
 ## Which route through a map a run is on: 0 is the main track, 1 and up are bonuses. There is no
@@ -47,7 +47,7 @@ static func bonus_number(track: int) -> int:
 ## anything below 1 is an error and returns -1, never a clamped neighbour.
 static func of_bonus(number: int) -> int:
 	if number < BONUS_FIRST or not is_valid(number):
-		push_error("DotTimerTrack.of_bonus: %d is not a bonus number (1 or more)" % number)
+		push_error("GSTimerTrack.of_bonus: %d is not a bonus number (1 or more)" % number)
 		return -1
 	return number
 
@@ -59,7 +59,7 @@ static func write_wire(writer: Variant, track: int) -> void:
 		writer.write_uint(track, BITS)
 		return
 	if not is_valid(track):
-		push_error("DotTimerTrack.write_wire: track %d is not a track; sending main" % track)
+		push_error("GSTimerTrack.write_wire: track %d is not a track; sending main" % track)
 		writer.write_uint(MAIN, BITS)
 		return
 	writer.write_uint(WIDE, BITS)

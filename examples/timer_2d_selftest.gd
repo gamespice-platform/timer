@@ -1,7 +1,7 @@
 extends Node2D
 
-## Proves the timer works in 2D, end to end, with nothing 3D in it: zones as [DotTimerZoneVolume2D] nodes, a body moved by 2D vectors, a run that files a record.
-## Run: [code]godot --headless --path . res://examples/timer_2d_selftest.tscn[/code]. The trap it exists for is the third axis; see [method DotTimerZone.flatten_for_2d].
+## Proves the timer works in 2D, end to end, with nothing 3D in it: zones as [GSTimerZoneVolume2D] nodes, a body moved by 2D vectors, a run that files a record.
+## Run: [code]godot --headless --path . res://examples/timer_2d_selftest.tscn[/code]. The trap it exists for is the third axis; see [method GSTimerZone.flatten_for_2d].
 
 ## The host's own units. A 2D game's "metres" are pixels, and the timer does not
 ## care — but the numbers below have to be self-consistent for the expected times
@@ -29,7 +29,7 @@ var _completed := 0
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -97,39 +97,39 @@ func _check_near(
 	)
 
 
-## Builds the course as a tree of [DotTimerZoneVolume2D] nodes, then collects it.
+## Builds the course as a tree of [GSTimerZoneVolume2D] nodes, then collects it.
 ## Built in code because this is a test; a real 2D game places the nodes in the editor.
 func _build_course() -> Node2D:
 	var course := Node2D.new()
 	course.name = "Course"
 	add_child(course)
 
-	var start := DotTimerZoneVolume2D.new()
+	var start := GSTimerZoneVolume2D.new()
 	start.name = "Start"
-	start.kind = DotTimerZone.Kind.START
+	start.kind = GSTimerZone.Kind.START
 	start.size = Vector2(START_W, 400.0)
 	start.position = Vector2(START_X + START_W * 0.5, 0.0)
 	course.add_child(start)
 
-	var finish := DotTimerZoneVolume2D.new()
+	var finish := GSTimerZoneVolume2D.new()
 	finish.name = "Finish"
-	finish.kind = DotTimerZone.Kind.END
+	finish.kind = GSTimerZone.Kind.END
 	finish.size = Vector2(FINISH_W, 400.0)
 	finish.position = Vector2(FINISH_X + FINISH_W * 0.5, 0.0)
 	course.add_child(finish)
 
 	for i in range(1, 3):
-		var stage := DotTimerZoneVolume2D.new()
+		var stage := GSTimerZoneVolume2D.new()
 		stage.name = "Stage%d" % i
-		stage.kind = DotTimerZone.Kind.STAGE
+		stage.kind = GSTimerZone.Kind.STAGE
 		stage.number = float(i)
 		stage.size = Vector2(20.0, 400.0)
 		stage.position = Vector2(400.0 * float(i), 0.0)
 		course.add_child(stage)
 
-	var spawn := DotTimerZoneVolume2D.new()
+	var spawn := GSTimerZoneVolume2D.new()
 	spawn.name = "Spawn"
-	spawn.kind = DotTimerZone.Kind.SPAWN
+	spawn.kind = GSTimerZone.Kind.SPAWN
 	spawn.position = Vector2(20.0, 0.0)
 	course.add_child(spawn)
 
@@ -140,17 +140,17 @@ func _test_zones_are_authored_in_2d() -> void:
 	_section("zones authored in the 2D editor")
 
 	var course := _build_course()
-	var zones := DotTimerZoneVolume2D.collect(course, &"course_2d")
+	var zones := GSTimerZoneVolume2D.collect(course, &"course_2d")
 
 	_check(zones.zones.size() == 5, "five nodes become five zones",
 		"%d" % zones.zones.size())
 	_check(zones.problems().is_empty(), "and the set is well formed",
 		", ".join(zones.problems()))
 	_check(
-		zones.playable_tracks() == PackedInt32Array([DotTimerTrack.MAIN]),
+		zones.playable_tracks() == PackedInt32Array([GSTimerTrack.MAIN]),
 		"with one playable track"
 	)
-	_check(zones.stage_count(DotTimerTrack.MAIN) == 2, "and two stages")
+	_check(zones.stage_count(GSTimerTrack.MAIN) == 2, "and two stages")
 
 	# `[track-zone-1]`, asked of a set collected from 2D nodes. The course has a start,
 	# a finish, its stages and a spawn, and nothing to catch a body that falls off it,
@@ -161,7 +161,7 @@ func _test_zones_are_authored_in_2d() -> void:
 		"the route is missing exactly its pit, and says so",
 		str(incomplete)
 	)
-	zones.meta[DotTimerZoneSet.PITLESS_TRACKS_KEY] = [DotTimerTrack.MAIN]
+	zones.meta[GSTimerZoneSet.PITLESS_TRACKS_KEY] = [GSTimerTrack.MAIN]
 	_check(zones.route_problems().is_empty(),
 		"and is complete once the map declares it has ground under all of it",
 		str(zones.route_problems()))
@@ -169,7 +169,7 @@ func _test_zones_are_authored_in_2d() -> void:
 	# The third axis. A 2D game's sample is (x, y, 0), so every zone has to contain
 	# that plane — which a rectangle drawn in the editor does not, until it is
 	# flattened.
-	var start := zones.first_of_kind(DotTimerZone.Kind.START, DotTimerTrack.MAIN)
+	var start := zones.first_of_kind(GSTimerZone.Kind.START, GSTimerTrack.MAIN)
 
 	_check(
 		start.contains(Vector3(START_X + 10.0, 0.0, 0.0)),
@@ -189,19 +189,19 @@ func _test_a_2d_run() -> void:
 	_section("a 2D run")
 
 	var course := _build_course()
-	var zones := DotTimerZoneVolume2D.collect(course, &"course_2d")
+	var zones := GSTimerZoneVolume2D.collect(course, &"course_2d")
 
-	var timer := DotTimer.new()
+	var timer := GSTimer.new()
 	timer.authoritative = true
 	timer.bind(zones, TICK_RATE)
 
-	var style := DotTimerStyle.new()
+	var style := GSTimerStyle.new()
 	style.minimum_time = 0.0
 	timer.style = style
 
-	var finished: Array[DotTimerRun] = []
+	var finished: Array[GSTimerRun] = []
 	timer.run_finished.connect(
-		func(run: DotTimerRun) -> void: finished.append(run)
+		func(run: GSTimerRun) -> void: finished.append(run)
 	)
 
 	var stages := PackedInt32Array()
@@ -215,7 +215,7 @@ func _test_a_2d_run() -> void:
 	body.position = Vector2(-100.0, 0.0)
 	course.add_child(body)
 
-	var sample := DotTimerSample.new()
+	var sample := GSTimerSample.new()
 	sample.grounded = true
 	sample.position = Vector3(body.position.x, body.position.y, 0.0)
 	sample.previous_position = sample.position
@@ -276,13 +276,13 @@ func _test_a_2d_run() -> void:
 ## Runs the same course at another tick rate and returns the time.
 func _run_at(tick_rate: int) -> float:
 	var course := _build_course()
-	var zones := DotTimerZoneVolume2D.collect(course, &"course_2d")
+	var zones := GSTimerZoneVolume2D.collect(course, &"course_2d")
 
-	var timer := DotTimer.new()
+	var timer := GSTimer.new()
 	timer.authoritative = true
 	timer.bind(zones, tick_rate)
 
-	var sample := DotTimerSample.new()
+	var sample := GSTimerSample.new()
 	sample.grounded = true
 	sample.position = Vector3(-100.0, 0.0, 0.0)
 	sample.previous_position = sample.position
@@ -308,7 +308,7 @@ func _test_the_third_axis_trap() -> void:
 	# What a 2D game gets if it builds a zone by hand from its own coordinates and
 	# forgets that a box needs depth. This is the failure the volume node exists to
 	# prevent, and it is silent: the zone is drawn, saved, listed and does nothing.
-	var naive := DotTimerZone.make(DotTimerZone.Kind.START)
+	var naive := GSTimerZone.make(GSTimerZone.Kind.START)
 	naive.set_box(Vector3(0.0, 0.0, 0.0), Vector3(100.0, 400.0, 0.0))
 
 	_check(
@@ -324,8 +324,8 @@ func _test_the_third_axis_trap() -> void:
 	)
 
 	# And the node does it for you, which is why a 2D game should use the node.
-	var node := DotTimerZoneVolume2D.new()
-	node.kind = DotTimerZone.Kind.START
+	var node := GSTimerZoneVolume2D.new()
+	node.kind = GSTimerZone.Kind.START
 	node.size = Vector2(100.0, 400.0)
 	add_child(node)
 
@@ -333,25 +333,25 @@ func _test_the_third_axis_trap() -> void:
 
 	_check(
 		zone.contains(Vector3(0.0, 0.0, 0.0)),
-		"DotTimerZoneVolume2D flattens without being asked"
+		"GSTimerZoneVolume2D flattens without being asked"
 	)
 
 	node.queue_free()
 	_done()
 
 
-func _check_2d_replay_round_trip(player: DotTimerManager.Player) -> void:
+func _check_2d_replay_round_trip(player: GSTimerManager.Player) -> void:
 	if player == null or player.last_replay == null:
 		return
 
 	var bytes := player.last_replay.to_bytes()
-	var back := DotTimerReplay.from_bytes(bytes)
+	var back := GSTimerReplay.from_bytes(bytes)
 
 	_check(back.ok, "which round-trips through the same container 3D uses")
 
 	if back.ok:
-		var frames: Array[DotTimerReplay.Frame] = (
-			back.value as DotTimerReplay
+		var frames: Array[GSTimerReplay.Frame] = (
+			back.value as GSTimerReplay
 		).frames
 		_check(
 			frames.size() == player.last_replay.frames.size(),
@@ -367,26 +367,26 @@ func _test_a_2d_record() -> void:
 	_section("a 2D record")
 
 	var course := _build_course()
-	var zones := DotTimerZoneVolume2D.collect(course, &"course_2d")
+	var zones := GSTimerZoneVolume2D.collect(course, &"course_2d")
 
-	var manager := DotTimerManager.new()
+	var manager := GSTimerManager.new()
 	manager.authoritative = true
 	manager.tick_rate = TICK_RATE
-	manager.store = DotTimerStoreMemory.new()
+	manager.store = GSTimerStoreMemory.new()
 	# Replays are recorded from a 2D position exactly as from a 3D one — the
 	# container quantises three axes and the third is simply always zero.
 	manager.record_replays = true
 	add_child(manager)
 
-	var styles := DotTimerStyle.defaults()
+	var styles := GSTimerStyle.defaults()
 	styles[0].minimum_time = 0.0
 	manager.set_styles(styles)
 	manager.set_zones(zones)
 	manager.add_player(&"p2d", "Flat Player")
 
-	var filed: Array[DotTimerRecord] = []
+	var filed: Array[GSTimerRecord] = []
 	manager.record_accepted.connect(
-		func(record: DotTimerRecord, _p: DotTimerRecord, _r: int) -> void:
+		func(record: GSTimerRecord, _p: GSTimerRecord, _r: int) -> void:
 			filed.append(record)
 	)
 
@@ -418,7 +418,7 @@ func _test_a_2d_record() -> void:
 
 	_check_2d_replay_round_trip(player)
 
-	var top: DotResult = manager.store.top(&"course_2d", 0, &"normal", 10)
+	var top: GSResult = manager.store.top(&"course_2d", 0, &"normal", 10)
 	_check(
 		top.ok and (top.value as Array).size() == 1,
 		"and the 2D board has one row"

@@ -1,4 +1,4 @@
-class_name DotTimerRun
+class_name GSTimerRun
 extends RefCounted
 
 ## One attempt at a track: how long it has been going, what it has passed, and what the player did.
@@ -17,9 +17,9 @@ enum Status {
 
 var status: Status = Status.STOPPED
 
-var track: int = DotTimerTrack.MAIN
+var track: int = GSTimerTrack.MAIN
 
-## The style this attempt is on. A change means a new attempt; see [DotTimer].
+## The style this attempt is on. A change means a new attempt; see [GSTimer].
 var style_id: StringName = &"normal"
 
 ## Whole ticks accumulated. The trustworthy half of the time.
@@ -84,8 +84,8 @@ var time_scale: float = 1.0
 
 static func make(
 	p_track: int, p_style: StringName, p_tick_interval: float
-) -> DotTimerRun:
-	var run := DotTimerRun.new()
+) -> GSTimerRun:
+	var run := GSTimerRun.new()
 	run.track = p_track
 	run.style_id = p_style
 	run.tick_interval = p_tick_interval
@@ -256,11 +256,11 @@ func to_snapshot() -> Dictionary:
 
 ## A run rebuilt from [method to_snapshot]. Null when the data is not one.
 ## Restored PAUSED whatever it was saved as: the clock must not count the time spent reconnecting.
-static func from_snapshot(data: Dictionary) -> DotTimerRun:
+static func from_snapshot(data: Dictionary) -> GSTimerRun:
 	if not data.has("ticks") or not data.has("tick_interval"):
 		return null
-	var run := DotTimerRun.make(
-		int(data.get("track", DotTimerTrack.MAIN)),
+	var run := GSTimerRun.make(
+		int(data.get("track", GSTimerTrack.MAIN)),
 		StringName(str(data.get("style", "normal"))),
 		float(data["tick_interval"])
 	)
@@ -323,7 +323,7 @@ func formatted_time() -> String:
 func describe() -> Dictionary:
 	return {
 		"status": Status.keys()[status],
-		"track": DotTimerTrack.name_of(track),
+		"track": GSTimerTrack.name_of(track),
 		"style": String(style_id),
 		"time": formatted_time(),
 		"ticks": ticks,
@@ -346,6 +346,6 @@ func describe_lines() -> PackedStringArray:
 
 
 func _to_string() -> String:
-	return "DotTimerRun(%s %s %s)" % [
-		Status.keys()[status], DotTimerTrack.short_name_of(track), formatted_time()
+	return "GSTimerRun(%s %s %s)" % [
+		Status.keys()[status], GSTimerTrack.short_name_of(track), formatted_time()
 	]

@@ -1,16 +1,16 @@
 @tool
-class_name DotTimerZoneVolume2D
+class_name GSTimerZoneVolume2D
 extends Node2D
 
-## The 2D counterpart of [DotTimerZoneVolume3D]: maps a rectangle in the XY plane onto a box unbounded on Z.
-## Done once here because a wrong third axis is the likeliest way to draw a 2D zone that never fires; see [method DotTimerZone.flatten_for_2d].
+## The 2D counterpart of [GSTimerZoneVolume3D]: maps a rectangle in the XY plane onto a box unbounded on Z.
+## Done once here because a wrong third axis is the likeliest way to draw a 2D zone that never fires; see [method GSTimerZone.flatten_for_2d].
 
-@export var kind: DotTimerZone.Kind = DotTimerZone.Kind.START:
+@export var kind: GSTimerZone.Kind = GSTimerZone.Kind.START:
 	set(value):
 		kind = value
 		queue_redraw()
 
-@export_range(0, 8, 1, "or_greater") var track: int = DotTimerTrack.MAIN
+@export_range(0, 8, 1, "or_greater") var track: int = GSTimerTrack.MAIN
 
 ## Size of the rectangle, in the host's own 2D units, centred on this node.
 @export var size: Vector2 = Vector2(128.0, 128.0):
@@ -28,8 +28,8 @@ extends Node2D
 
 
 ## The zone this node describes, unbounded on Z.
-func to_zone() -> DotTimerZone:
-	var zone := DotTimerZone.make(kind, track)
+func to_zone() -> GSTimerZone:
+	var zone := GSTimerZone.make(kind, track)
 
 	var centre := global_position
 	var half := size * 0.5
@@ -52,8 +52,8 @@ func to_zone() -> DotTimerZone:
 	return zone
 
 
-static func collect(root: Node, map_id: StringName) -> DotTimerZoneSet:
-	var set := DotTimerZoneSet.new()
+static func collect(root: Node, map_id: StringName) -> GSTimerZoneSet:
+	var set := GSTimerZoneSet.new()
 	set.map_id = map_id
 
 	_collect_into(root, set)
@@ -61,9 +61,9 @@ static func collect(root: Node, map_id: StringName) -> DotTimerZoneSet:
 	return set
 
 
-static func _collect_into(node: Node, set: DotTimerZoneSet) -> void:
-	if node is DotTimerZoneVolume2D:
-		set.add((node as DotTimerZoneVolume2D).to_zone())
+static func _collect_into(node: Node, set: GSTimerZoneSet) -> void:
+	if node is GSTimerZoneVolume2D:
+		set.add((node as GSTimerZoneVolume2D).to_zone())
 
 	for child in node.get_children():
 		_collect_into(child, set)
@@ -76,7 +76,7 @@ func _draw() -> void:
 		return
 
 	var rectangle := Rect2(-size * 0.5, size)
-	var colour := DotTimerZoneVolume3D.colour_for(kind)
+	var colour := GSTimerZoneVolume3D.colour_for(kind)
 
 	draw_rect(rectangle, colour)
 	draw_rect(rectangle, Color(colour, 1.0), false, 2.0)

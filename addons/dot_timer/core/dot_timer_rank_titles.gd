@@ -1,4 +1,4 @@
-class_name DotTimerRankTitles
+class_name GSTimerRankTitles
 extends RefCounted
 
 ## The name a player's standing earns them, as a ladder loaded from a list of entries.
@@ -7,8 +7,8 @@ extends RefCounted
 var entries: Array[Dictionary] = []
 
 
-static func from_array(list: Array) -> DotTimerRankTitles:
-	var titles := DotTimerRankTitles.new()
+static func from_array(list: Array) -> GSTimerRankTitles:
+	var titles := GSTimerRankTitles.new()
 	for entry in list:
 		if entry is Dictionary and (entry as Dictionary).has("title"):
 			titles.entries.append((entry as Dictionary).duplicate(true))
@@ -16,7 +16,7 @@ static func from_array(list: Array) -> DotTimerRankTitles:
 
 
 ## A ladder that works without configuration: a handful of neutral names.
-static func defaults() -> DotTimerRankTitles:
+static func defaults() -> GSTimerRankTitles:
 	return from_array([
 		{"title": "Record Holder", "colour": "#ffd54f", "rank": [1, 1]},
 		{"title": "Elite", "colour": "#ff8a65", "rank": [2, 10]},

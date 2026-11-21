@@ -1,4 +1,4 @@
-class_name DotTimer
+class_name GSTimer
 extends RefCounted
 
 ## The timer for one player: starts, splits, finishes, and reports what the map asked for along the way.
@@ -7,32 +7,32 @@ extends RefCounted
 const CHANNEL := "timer"
 
 ## Fired when a run begins. [param run] is live and will keep changing.
-signal run_started(run: DotTimerRun)
+signal run_started(run: GSTimerRun)
 
 ## Fired when one ends successfully. The run is FINISHED and will not change again.
-signal run_finished(run: DotTimerRun)
+signal run_finished(run: GSTimerRun)
 
 ## Fired when one is abandoned: a stop zone, a death, a style change, a reset.
-signal run_stopped(run: DotTimerRun, reason: StringName)
+signal run_stopped(run: GSTimerRun, reason: StringName)
 
 ## Fired on reaching a stage for the first time in a run.
 signal stage_reached(number: int, split_seconds: float)
 
 ## Fired the tick a player enters or leaves any zone, including the ones the timer acts on itself.
 ## A HUD, a sound or an anti-cheat wants to know; the timer has no opinion.
-signal zone_entered(zone: DotTimerZone)
-signal zone_exited(zone: DotTimerZone)
+signal zone_entered(zone: GSTimerZone)
+signal zone_exited(zone: GSTimerZone)
 
 ## The zone asked for something the host has to do: a teleport, a respawn, a slay.
 ## [param zone] carries the destination and payload. Emitted, not acted on, for the reason in the class documentation.
-signal effect_requested(zone: DotTimerZone)
+signal effect_requested(zone: GSTimerZone)
 
 ## The set of "while you are inside this" zones the player is in changed.
 ## One signal for the set, since effects compose and applying them singly leaves the host to work out what to undo.
 signal effects_changed()
 
 ## Leaving the start did not begin a run, and why ("too fast", "not on the ground long enough").
-## Emitted, not swallowed, like [signal DotTimerManager.record_refused].
+## Emitted, not swallowed, like [signal GSTimerManager.record_refused].
 signal start_refused(reason: String)
 
 ## Why a run stopped. StringNames rather than an enum so a game can add its own.
@@ -49,48 +49,48 @@ const REASON_AUTO_RESTART := &"auto_restart"
 
 ## Zone kinds that ask the HOST to do something the moment the player enters one, through [signal effect_requested].
 ## Distinct from [constant EFFECT_KINDS], which describe a condition while inside.
-const REQUEST_KINDS: Array[DotTimerZone.Kind] = [
-	DotTimerZone.Kind.RESPAWN,
-	DotTimerZone.Kind.SLAY,
-	DotTimerZone.Kind.TELEPORT,
-	DotTimerZone.Kind.CUSTOM,
+const REQUEST_KINDS: Array[GSTimerZone.Kind] = [
+	GSTimerZone.Kind.RESPAWN,
+	GSTimerZone.Kind.SLAY,
+	GSTimerZone.Kind.TELEPORT,
+	GSTimerZone.Kind.CUSTOM,
 ]
 
 ## Kinds whose request means the host is about to move the player. A teleport that
 ## follows one is expected; see [member teleport_stop_distance].
-const MOVING_KINDS: Array[DotTimerZone.Kind] = [
-	DotTimerZone.Kind.RESPAWN,
-	DotTimerZone.Kind.TELEPORT,
-	DotTimerZone.Kind.CHECKER,
+const MOVING_KINDS: Array[GSTimerZone.Kind] = [
+	GSTimerZone.Kind.RESPAWN,
+	GSTimerZone.Kind.TELEPORT,
+	GSTimerZone.Kind.CHECKER,
 ]
 
 ## Zone kinds that describe a condition while inside, rather than an event on entry.
-const EFFECT_KINDS: Array[DotTimerZone.Kind] = [
-	DotTimerZone.Kind.FREESTYLE,
-	DotTimerZone.Kind.SPEED_LIMIT,
-	DotTimerZone.Kind.EASY_BHOP,
-	DotTimerZone.Kind.SLIDE,
-	DotTimerZone.Kind.AIR_ACCELERATE,
-	DotTimerZone.Kind.GRAVITY,
-	DotTimerZone.Kind.PUSH,
-	DotTimerZone.Kind.NO_JUMP,
-	DotTimerZone.Kind.AUTO_HOP,
+const EFFECT_KINDS: Array[GSTimerZone.Kind] = [
+	GSTimerZone.Kind.FREESTYLE,
+	GSTimerZone.Kind.SPEED_LIMIT,
+	GSTimerZone.Kind.EASY_BHOP,
+	GSTimerZone.Kind.SLIDE,
+	GSTimerZone.Kind.AIR_ACCELERATE,
+	GSTimerZone.Kind.GRAVITY,
+	GSTimerZone.Kind.PUSH,
+	GSTimerZone.Kind.NO_JUMP,
+	GSTimerZone.Kind.AUTO_HOP,
 ]
 
-var zones: DotTimerZoneSet = null
-var index: DotTimerZoneIndex = null
+var zones: GSTimerZoneSet = null
+var index: GSTimerZoneIndex = null
 
 ## Ticks per second. Must match the host's simulation rate.
 var tick_rate: int = 128
 
 ## The ranking rules for the style in force. Null means everything is allowed.
-var style: DotTimerStyle = null
+var style: GSTimerStyle = null
 
 ## The current attempt. Never null; a stopped one is a run with STOPPED status.
-var run: DotTimerRun = null
+var run: GSTimerRun = null
 
 ## Which track the player is attempting. Changing it stops a run in progress.
-var track: int = DotTimerTrack.MAIN
+var track: int = GSTimerTrack.MAIN
 
 ## Whether this timer is the authority. A client's timer must not file records.
 ## The server sets this; a client leaves it false and treats its answer as a display, which keeps the HUD on the tick.
@@ -114,13 +114,13 @@ var pause_max_speed: float = 0.5
 var _inside: Dictionary = {}
 
 ## Zones entered on this tick. Rebuilt every tick by [method _diff_membership].
-var _entered: Array[DotTimerZone] = []
+var _entered: Array[GSTimerZone] = []
 
 ## The "while inside" zones in force, by kind. Rebuilt only when the set changes.
 var _effects: Dictionary = {}
 
 ## Reused per-tick scratch, so a tick allocates nothing.
-var _found: Array[DotTimerZone] = []
+var _found: Array[GSTimerZone] = []
 
 ## Ticks the run has been paused for, checked against the style's limit.
 var _pause_ticks: int = 0
@@ -141,7 +141,7 @@ var _expect_teleport_ticks: int = 0
 var _pause_snapshot: Dictionary = {}
 
 ## The start zone the player was last inside, for its own speed rules.
-var _start_zone: DotTimerZone = null
+var _start_zone: GSTimerZone = null
 
 ## Diagnostic counters.
 var ticks_processed: int = 0
@@ -150,27 +150,27 @@ var runs_finished: int = 0
 
 
 func _init() -> void:
-	run = DotTimerRun.make(track, &"normal", 1.0 / float(tick_rate))
+	run = GSTimerRun.make(track, &"normal", 1.0 / float(tick_rate))
 
 
 ## Binds the timer to a map's zones. Safe to call again on a map change.
-func bind(set: DotTimerZoneSet, p_tick_rate: int = 128) -> DotResult:
+func bind(set: GSTimerZoneSet, p_tick_rate: int = 128) -> GSResult:
 	if p_tick_rate <= 0:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"A timer needs a positive tick rate.",
 			"%d" % p_tick_rate
 		)
 
 	zones = set
 	tick_rate = p_tick_rate
-	index = DotTimerZoneIndex.of(set)
+	index = GSTimerZoneIndex.of(set)
 
 	# A map change abandons whatever was in progress. Silently carrying a run across
 	# one would file a record on the new map for a run set on the old.
 	_reset_state(REASON_RESET)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func tick_interval() -> float:
@@ -179,7 +179,7 @@ func tick_interval() -> float:
 
 ## Advances the timer by one simulated tick.
 ## Call once per simulated tick from the movement loop, never from [code]_process[/code]: a per-frame timer makes a time depend on the monitor.
-func tick(sample: DotTimerSample) -> void:
+func tick(sample: GSTimerSample) -> void:
 	ticks_processed += 1
 
 	if index == null:
@@ -224,27 +224,27 @@ func tick(sample: DotTimerSample) -> void:
 
 
 ## Applies this tick's zones to the run and reports whether the player is in this track's start zone.
-func _apply_zones(sample: DotTimerSample) -> bool:
+func _apply_zones(sample: GSTimerSample) -> bool:
 	var in_start := false
 
 	for zone in _found:
-		if zone.kind == DotTimerZone.Kind.START and zone.track == track:
+		if zone.kind == GSTimerZone.Kind.START and zone.track == track:
 			_start_zone = zone
 		if zone.track != track:
 			# Another track's zone is reported as entered but never affects this run; else a bonus finish ends a main-track run.
 			continue
 
 		match zone.kind:
-			DotTimerZone.Kind.START:
+			GSTimerZone.Kind.START:
 				in_start = true
-			DotTimerZone.Kind.END:
+			GSTimerZone.Kind.END:
 				_try_finish(sample)
-			DotTimerZone.Kind.STAGE:
+			GSTimerZone.Kind.STAGE:
 				_try_stage(zone, sample, int(zone.number))
-			DotTimerZone.Kind.STOP:
+			GSTimerZone.Kind.STOP:
 				if run.is_active():
 					_stop(REASON_ZONE)
-			DotTimerZone.Kind.VALIDATOR:
+			GSTimerZone.Kind.VALIDATOR:
 				if run.is_active():
 					run.validated[int(zone.number)] = true
 			_:
@@ -254,7 +254,7 @@ func _apply_zones(sample: DotTimerSample) -> bool:
 
 
 ## Tracks the ground streak, stops a run on noclip or an unexpected teleport, and spends one expected-teleport tick.
-func _guard_tick(sample: DotTimerSample) -> void:
+func _guard_tick(sample: GSTimerSample) -> void:
 	if sample.grounded:
 		_ground_ticks += 1
 	else:
@@ -276,7 +276,7 @@ func _guard_tick(sample: DotTimerSample) -> void:
 
 ## Counts a paused tick and ends the run when the style's pause allowance runs out.
 func _count_pause() -> void:
-	if run.status == DotTimerRun.Status.PAUSED:
+	if run.status == GSTimerRun.Status.PAUSED:
 		_pause_ticks += 1
 
 		if (
@@ -297,13 +297,13 @@ func _request_effects() -> void:
 	# and a handler that reaches `set_zones` clears the array being walked.
 	var entered: Array = _entered.duplicate()
 
-	for zone: DotTimerZone in entered:
+	for zone: GSTimerZone in entered:
 		# The same track filter the run itself uses. A bonus track's pit must not
 		# respawn somebody attempting the main route past it.
 		if zone.track != track:
 			continue
 
-		if zone.kind == DotTimerZone.Kind.CHECKER:
+		if zone.kind == GSTimerZone.Kind.CHECKER:
 			# Only a checker that was not validated sends anybody back, and only during
 			# a run: walking through one with no run going is not skipping anything.
 			if not run.is_active() or run.validated.has(int(zone.number)):
@@ -319,11 +319,11 @@ func _request_effects() -> void:
 
 ## Rolls this tick's position forward to be the next tick's "previous".
 ## Owned by the timer: a host that updated it twice or before the timer ran would give permanently wrong times.
-func _carry(sample: DotTimerSample) -> void:
+func _carry(sample: GSTimerSample) -> void:
 	sample.previous_position = sample.position
 
 
-func _diff_membership(current: Array[DotTimerZone]) -> void:
+func _diff_membership(current: Array[GSTimerZone]) -> void:
 	var now := {}
 
 	_entered.clear()
@@ -341,7 +341,7 @@ func _diff_membership(current: Array[DotTimerZone]) -> void:
 	_inside = now
 
 
-func _rebuild_effects(current: Array[DotTimerZone]) -> void:
+func _rebuild_effects(current: Array[GSTimerZone]) -> void:
 	var next := {}
 
 	for zone in current:
@@ -363,34 +363,34 @@ func _rebuild_effects(current: Array[DotTimerZone]) -> void:
 	_effects = next
 
 
-## The "while you are inside this" zones in force, by [enum DotTimerZone.Kind].
+## The "while you are inside this" zones in force, by [enum GSTimerZone.Kind].
 ## The host applies what it supports; kinds it does not understand are simply not applied.
 func active_effects() -> Dictionary:
 	return _effects
 
 
 ## The effect zone of one kind in force, or null.
-func effect(kind: DotTimerZone.Kind) -> DotTimerZone:
+func effect(kind: GSTimerZone.Kind) -> GSTimerZone:
 	var found: Variant = _effects.get(kind)
-	return found if found is DotTimerZone else null
+	return found if found is GSTimerZone else null
 
 
 ## Whether an EFFECT zone of this kind is in force. See [member EFFECT_KINDS].
-func is_inside(kind: DotTimerZone.Kind) -> bool:
+func is_inside(kind: GSTimerZone.Kind) -> bool:
 	return _effects.has(kind)
 
 
 ## Whether the player is standing in a zone of this kind on this run's track, START and END included.
 ## [method is_inside] answers for EFFECT zones only; the prespeed clamp needs this one.
-func in_zone(kind: DotTimerZone.Kind) -> bool:
+func in_zone(kind: GSTimerZone.Kind) -> bool:
 	for id in _inside:
-		var zone: DotTimerZone = _inside[id]
+		var zone: GSTimerZone = _inside[id]
 		if zone.kind == kind and zone.track == track:
 			return true
 	return false
 
 
-func _try_start(sample: DotTimerSample) -> void:
+func _try_start(sample: GSTimerSample) -> void:
 	if not sample.alive:
 		return
 
@@ -404,7 +404,7 @@ func _try_start(sample: DotTimerSample) -> void:
 		start_refused.emit(refused)
 		return
 
-	var start_zone := _zone_for(DotTimerZone.Kind.START)
+	var start_zone := _zone_for(GSTimerZone.Kind.START)
 
 	var fraction := 0.0
 
@@ -413,7 +413,7 @@ func _try_start(sample: DotTimerSample) -> void:
 			start_zone, sample.previous_position, sample.position
 		)
 
-	run = DotTimerRun.make(track, _style_id(), tick_interval())
+	run = GSTimerRun.make(track, _style_id(), tick_interval())
 	run.time_scale = style.timescale if style != null else 1.0
 	run.begin(fraction)
 	run.start_speed = Vector2(sample.velocity.x, sample.velocity.z).length()
@@ -422,7 +422,7 @@ func _try_start(sample: DotTimerSample) -> void:
 	runs_started += 1
 	_pause_ticks = 0
 
-	DotLog.debug(CHANNEL, "run started", {
+	GSLog.debug(CHANNEL, "run started", {
 		"track": track, "style": String(run.style_id), "offset": fraction
 	})
 
@@ -430,8 +430,8 @@ func _try_start(sample: DotTimerSample) -> void:
 
 
 ## Why leaving the start does not begin a run, or "" if it does.
-## The style's rules, overridden by the start zone's payload ([code]prespeed[/code], [code]no_vertical[/code], [code]ground_seconds[/code]); waived below [member DotTimerStyle.start_rules_below].
-func _start_refusal(sample: DotTimerSample) -> String:
+## The style's rules, overridden by the start zone's payload ([code]prespeed[/code], [code]no_vertical[/code], [code]ground_seconds[/code]); waived below [member GSTimerStyle.start_rules_below].
+func _start_refusal(sample: GSTimerSample) -> String:
 	if style == null:
 		return ""
 	var payload: Dictionary = _start_zone.payload if _start_zone != null else {}
@@ -456,14 +456,14 @@ func _start_refusal(sample: DotTimerSample) -> String:
 	return ""
 
 
-func _try_finish(sample: DotTimerSample) -> void:
+func _try_finish(sample: GSTimerSample) -> void:
 	if not run.is_running():
 		return
 
-	var end_zone := _zone_for(DotTimerZone.Kind.END)
+	var end_zone := _zone_for(GSTimerZone.Kind.END)
 
 	# The fraction of this tick spent REACHING the line, which is the player's and is
-	# added — see DotTimerRun.end_offset. The finishing tick is never counted by
+	# added — see GSTimerRun.end_offset. The finishing tick is never counted by
 	# advance(), because the run is FINISHED before it runs.
 	var fraction := 0.0
 
@@ -475,7 +475,7 @@ func _try_finish(sample: DotTimerSample) -> void:
 	run.finish(fraction)
 	runs_finished += 1
 
-	DotLog.info(CHANNEL, "run finished", {
+	GSLog.info(CHANNEL, "run finished", {
 		"track": track,
 		"style": String(run.style_id),
 		"time": run.formatted_time(),
@@ -485,7 +485,7 @@ func _try_finish(sample: DotTimerSample) -> void:
 
 
 func _try_stage(
-	zone: DotTimerZone, sample: DotTimerSample, number: int
+	zone: GSTimerZone, sample: GSTimerSample, number: int
 ) -> void:
 	if not run.is_running():
 		return
@@ -501,7 +501,7 @@ func _try_stage(
 ## Where along the last tick's movement the player crossed [param zone]'s boundary, 0..1.
 ## Linear in the signed distance; the curve of gravity over one tick is micrometres, and re-simulating would have to be identical everywhere.
 func _crossing_fraction(
-	zone: DotTimerZone,
+	zone: GSTimerZone,
 	from: Vector3,
 	to: Vector3
 ) -> float:
@@ -521,7 +521,7 @@ func _crossing_fraction(
 	return clampf(d_from / span, 0.0, 1.0)
 
 
-func _zone_for(kind: DotTimerZone.Kind) -> DotTimerZone:
+func _zone_for(kind: GSTimerZone.Kind) -> GSTimerZone:
 	return zones.first_of_kind(kind, track) if zones != null else null
 
 
@@ -537,7 +537,7 @@ func stop(reason: StringName = REASON_RESET) -> void:
 
 func _stop(reason: StringName) -> void:
 	var stopped := run
-	run = DotTimerRun.make(track, _style_id(), tick_interval())
+	run = GSTimerRun.make(track, _style_id(), tick_interval())
 	_pause_ticks = 0
 
 	stopped.stop()
@@ -546,7 +546,7 @@ func _stop(reason: StringName) -> void:
 
 ## Switches track. Any run in progress is abandoned.
 func set_track(new_track: int) -> bool:
-	if not DotTimerTrack.is_valid(new_track) or new_track == track:
+	if not GSTimerTrack.is_valid(new_track) or new_track == track:
 		return false
 
 	if run.is_active():
@@ -561,7 +561,7 @@ func set_track(new_track: int) -> bool:
 
 ## Switches style. Any run in progress is abandoned.
 ## Abandoned, not carried over: half a run under one style and half under another is a run on neither.
-func set_style(new_style: DotTimerStyle) -> bool:
+func set_style(new_style: GSTimerStyle) -> bool:
 	var new_id: StringName = new_style.id if new_style != null else &"normal"
 
 	if new_id == _style_id():
@@ -590,33 +590,33 @@ func resume() -> bool:
 
 ## Pauses the run if the rules allow it, keeping where the player was.
 ## The rules (not in start or end, grounded, nearly still) stop a pause being a free checkpoint or run-up; the snapshot is what [method resume_checked] hands back.
-func pause_checked(sample: DotTimerSample) -> DotResult:
+func pause_checked(sample: GSTimerSample) -> GSResult:
 	if not run.is_running():
-		return DotResult.fail(DotError.CODE_STATE, "There is no run to pause.")
+		return GSResult.fail(GSError.CODE_STATE, "There is no run to pause.")
 	if pause_rules and sample != null:
-		if in_zone(DotTimerZone.Kind.START) or in_zone(DotTimerZone.Kind.END):
-			return DotResult.fail(DotError.CODE_FORBIDDEN, "You cannot pause in the start or the end.")
+		if in_zone(GSTimerZone.Kind.START) or in_zone(GSTimerZone.Kind.END):
+			return GSResult.fail(GSError.CODE_FORBIDDEN, "You cannot pause in the start or the end.")
 		if not sample.grounded:
-			return DotResult.fail(DotError.CODE_FORBIDDEN, "You can only pause on the ground.")
+			return GSResult.fail(GSError.CODE_FORBIDDEN, "You can only pause on the ground.")
 		if sample.velocity.length() > pause_max_speed:
-			return DotResult.fail(DotError.CODE_FORBIDDEN, "Stop moving before you pause.")
+			return GSResult.fail(GSError.CODE_FORBIDDEN, "Stop moving before you pause.")
 	_pause_snapshot = {
 		"position": sample.position if sample != null else Vector3.ZERO,
 		"velocity": sample.velocity if sample != null else Vector3.ZERO,
 	}
 	run.pause()
-	return DotResult.success(_pause_snapshot.duplicate())
+	return GSResult.success(_pause_snapshot.duplicate())
 
 
 ## Resumes a paused run. Success carries the snapshot [method pause_checked] took — the
 ## host puts the player back there before the next tick, which is why the move that
 ## follows is an expected teleport rather than a suspicious one.
-func resume_checked() -> DotResult:
-	if run.status != DotTimerRun.Status.PAUSED:
-		return DotResult.fail(DotError.CODE_STATE, "The run is not paused.")
+func resume_checked() -> GSResult:
+	if run.status != GSTimerRun.Status.PAUSED:
+		return GSResult.fail(GSError.CODE_STATE, "The run is not paused.")
 	resume()
 	expect_teleport()
-	return DotResult.success(_pause_snapshot.duplicate())
+	return GSResult.success(_pause_snapshot.duplicate())
 
 
 ## Declares that the host is about to move the player, so the move does not stop the
@@ -627,7 +627,7 @@ func expect_teleport(ticks: int = 2) -> void:
 
 ## Puts a saved run back — a player who dropped mid-run returning. The run comes back
 ## PAUSED; the host moves the player to where it was and calls [method resume_checked].
-func restore_run(restored: DotTimerRun, at: Vector3 = Vector3.ZERO, velocity: Vector3 = Vector3.ZERO) -> bool:
+func restore_run(restored: GSTimerRun, at: Vector3 = Vector3.ZERO, velocity: Vector3 = Vector3.ZERO) -> bool:
 	# The run is the style it was run on: a run restored onto another style would be
 	# filed on that style's board — half a run on low gravity, ranked as normal.
 	if restored == null or restored.track != track or restored.style_id != _style_id():
@@ -661,52 +661,52 @@ func taint() -> void:
 
 ## Whether the finished run may be recorded, and why not if it may not.
 ## Each refusal exists because of a real exploit: minimum time, checkpoint and taint flags, zone fingerprint.
-func can_record(finished: DotTimerRun) -> DotResult:
+func can_record(finished: GSTimerRun) -> GSResult:
 	if not authoritative:
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN,
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN,
 			"Only an authoritative timer may file a record.",
 			"a client's own timer is a display, not a source"
 		)
 
-	if finished == null or finished.status != DotTimerRun.Status.FINISHED:
-		return DotResult.fail(
-			DotError.CODE_STATE, "That run did not finish."
+	if finished == null or finished.status != GSTimerRun.Status.FINISHED:
+		return GSResult.fail(
+			GSError.CODE_STATE, "That run did not finish."
 		)
 
 	if style != null and not style.ranked:
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN,
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN,
 			"This style is not ranked.",
 			String(style.id)
 		)
 
 	# A style that allows checkpoints files the run anyway — that is what the switch
-	# means (see DotTimerStyle.allow_checkpoints), and refusing here regardless made a
+	# means (see GSTimerStyle.allow_checkpoints), and refusing here regardless made a
 	# segmented style one that could never file anything.
 	if finished.used_checkpoints and not (style != null and style.allow_checkpoints):
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN, "The run used practice checkpoints."
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN, "The run used practice checkpoints."
 		)
 
 	if finished.tainted:
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN, "The run was assisted."
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN, "The run was assisted."
 		)
 
 	# After the refusals above on purpose: a run that was assisted AND skipped a stage
 	# was assisted, and that is the reason the player should be told.
 	if finished.skipped:
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN, "The run skipped part of the route."
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN, "The run skipped part of the route."
 		)
 
 	if enforce_stages and zones != null:
 		var stages := zones.stage_count(finished.track)
 		for number in range(1, stages + 1):
 			if not finished.splits.has(number):
-				return DotResult.fail(
-					DotError.CODE_FORBIDDEN,
+				return GSResult.fail(
+					GSError.CODE_FORBIDDEN,
 					"The run missed stage %d." % number,
 					"%d of %d stages" % [finished.splits.size(), stages]
 				)
@@ -716,25 +716,25 @@ func can_record(finished: DotTimerRun) -> DotResult:
 	)
 
 	if finished.time() < floor_time:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"Faster than the shortest run this style records.",
 			"%.3f s, floor %.3f s" % [finished.time(), floor_time]
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## Builds the record for a finished run. Null when [method can_record] refuses.
 func build_record(
-	finished: DotTimerRun,
+	finished: GSTimerRun,
 	player_id: StringName,
 	player_name: String
-) -> DotTimerRecord:
+) -> GSTimerRecord:
 	if not can_record(finished).ok:
 		return null
 
-	var record := DotTimerRecord.from_run(
+	var record := GSTimerRecord.from_run(
 		finished,
 		zones.map_id if zones != null else &"",
 		player_id,
@@ -764,13 +764,13 @@ func _reset_state(reason: StringName) -> void:
 	if run.is_active():
 		_stop(reason)
 	else:
-		run = DotTimerRun.make(track, _style_id(), tick_interval())
+		run = GSTimerRun.make(track, _style_id(), tick_interval())
 
 
 func describe() -> Dictionary:
 	return {
 		"map": String(zones.map_id) if zones != null else "-",
-		"track": DotTimerTrack.name_of(track),
+		"track": GSTimerTrack.name_of(track),
 		"style": String(_style_id()),
 		"authoritative": authoritative,
 		"run": run.describe(),
@@ -785,7 +785,7 @@ func describe_lines() -> PackedStringArray:
 	var out := PackedStringArray()
 
 	out.append("map          %s" % (String(zones.map_id) if zones != null else "-"))
-	out.append("track        %s" % DotTimerTrack.name_of(track))
+	out.append("track        %s" % GSTimerTrack.name_of(track))
 	out.append("style        %s" % String(_style_id()))
 	out.append("tick rate    %d" % tick_rate)
 	out.append("authority    %s" % authoritative)
@@ -797,4 +797,4 @@ func describe_lines() -> PackedStringArray:
 
 
 func _to_string() -> String:
-	return "DotTimer(%s)" % str(run)
+	return "GSTimer(%s)" % str(run)

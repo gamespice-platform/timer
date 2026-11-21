@@ -1,5 +1,5 @@
-class_name DotTimerStoreSql
-extends DotTimerStore
+class_name GSTimerStoreSql
+extends GSTimerStore
 
 ## Records in SQLite, PostgreSQL or MySQL, through a duck-typed GameSpice SQL driver (so GameSpice Timer still parses without GameSpice SQL).
 ## Several servers can share one database; reads are cached for [member cache_seconds], writes go straight through.
@@ -41,7 +41,7 @@ func table(name: String) -> String:
 
 
 func table_specs() -> Array:
-	return DotTimerStoreSqlSpecs.specs(prefix)
+	return GSTimerStoreSqlSpecs.specs(prefix)
 
 
 func migration_steps() -> Array:
@@ -50,27 +50,27 @@ func migration_steps() -> Array:
 
 ## Opens the driver and creates or migrates the tables.
 ## A database written by a newer build is refused by GameSpice SQL's migrator rather than read with changed columns.
-func open() -> DotResult:
+func open() -> GSResult:
 	if driver == null:
-		return DotResult.fail(DotError.CODE_STATE, "No SQL driver.")
+		return GSResult.fail(GSError.CODE_STATE, "No SQL driver.")
 
 	if not prefix.is_valid_ascii_identifier() or prefix.length() > 40:
-		return DotResult.fail(DotError.CODE_INVALID, "Unsafe table prefix.", prefix)
+		return GSResult.fail(GSError.CODE_INVALID, "Unsafe table prefix.", prefix)
 
-	var available: DotResult = driver.is_available()
+	var available: GSResult = driver.is_available()
 	if not available.ok:
 		return available
 
-	var opened: DotResult = await driver.open()
+	var opened: GSResult = await driver.open()
 	if not opened.ok:
 		return opened
 
-	var migrated: DotResult = await driver.migrate("%s:%s" % [COMPONENT, prefix], migration_steps())
+	var migrated: GSResult = await driver.migrate("%s:%s" % [COMPONENT, prefix], migration_steps())
 	if not migrated.ok:
 		return migrated.wrap("Could not prepare the records tables.")
 
-	DotLog.info(CHANNEL, "records tables ready", {"prefix": prefix, "driver": driver.driver_name()})
-	return DotResult.success(true)
+	GSLog.info(CHANNEL, "records tables ready", {"prefix": prefix, "driver": driver.driver_name()})
+	return GSResult.success(true)
 
 
 func is_open() -> bool:
@@ -85,7 +85,7 @@ const RECORD_COLUMNS := [
 ]
 
 
-static func _record_params(r: DotTimerRecord) -> Array:
+static func _record_params(r: GSTimerRecord) -> Array:
 	return [
 		String(r.map_id), r.track, String(r.style_id), r.stage, String(r.player_id),
 		r.player_name, r.time, JSON.stringify(r.splits), r.set_at, r.tick_rate,
@@ -96,8 +96,8 @@ static func _record_params(r: DotTimerRecord) -> Array:
 
 ## A row back into a record. Numbers may arrive as floats (a gateway's JSON has one
 ## number type) and JSON columns as text, so every field is converted explicitly.
-static func _record_from(row: Dictionary) -> DotTimerRecord:
-	var r := DotTimerRecord.new()
+static func _record_from(row: Dictionary) -> GSTimerRecord:
+	var r := GSTimerRecord.new()
 	r.map_id = StringName(str(row.get("map", "")))
 	r.track = int(row.get("track", 0))
 	r.style_id = StringName(str(row.get("style", "normal")))
@@ -151,19 +151,19 @@ static func _board_params(map_id: StringName, track: int, style_id: StringName, 
 	return [String(map_id), track, String(style_id), stage]
 
 
-func _query(sql: String, params: Array = []) -> DotResult:
+func _query(sql: String, params: Array = []) -> GSResult:
 	queries += 1
 	return await driver.query(sql, params)
 
 
-func _execute(sql: String, params: Array = []) -> DotResult:
+func _execute(sql: String, params: Array = []) -> GSResult:
 	queries += 1
 	return await driver.execute(sql, params)
 
 
 func _select_record(
 	map_id: StringName, track: int, style_id: StringName, player_id: StringName, stage: int
-) -> DotResult:
+) -> GSResult:
 	var res := await _query(
 		"SELECT * FROM %s WHERE %s AND player = ?" % [table("records"), BOARD_WHERE],
 		_board_params(map_id, track, style_id, stage) + [String(player_id)]
@@ -171,20 +171,20 @@ func _select_record(
 	if not res.ok:
 		return res
 	var rows: Array = res.value
-	return DotResult.success(_record_from(rows[0]) if not rows.is_empty() else null)
+	return GSResult.success(_record_from(rows[0]) if not rows.is_empty() else null)
 
 
 
-func put(record: DotTimerRecord) -> DotResult:
+func put(record: GSTimerRecord) -> GSResult:
 	if record == null:
-		return DotResult.fail(DotError.CODE_INVALID, "No record to store.")
+		return GSResult.fail(GSError.CODE_INVALID, "No record to store.")
 	if not is_open():
-		return DotResult.fail(DotError.CODE_STATE, "The records database is not open.")
+		return GSResult.fail(GSError.CODE_STATE, "The records database is not open.")
 
 	var prev_res := await _select_record(record.map_id, record.track, record.style_id, record.player_id, record.stage)
 	if not prev_res.ok:
 		return prev_res.wrap("Could not read the player's best.")
-	var previous: DotTimerRecord = prev_res.value
+	var previous: GSTimerRecord = prev_res.value
 
 	var leader_res := await _query(
 		"SELECT * FROM %s WHERE %s ORDER BY time ASC LIMIT 1" % [table("records"), BOARD_WHERE],
@@ -192,7 +192,7 @@ func put(record: DotTimerRecord) -> DotResult:
 	)
 	if not leader_res.ok:
 		return leader_res.wrap("Could not read the board's record.")
-	var leader: DotTimerRecord = _record_from(leader_res.value[0]) if not (leader_res.value as Array).is_empty() else null
+	var leader: GSTimerRecord = _record_from(leader_res.value[0]) if not (leader_res.value as Array).is_empty() else null
 
 	var completions := (previous.completions if previous != null else 0) + 1
 	var improved := record.beats(previous)
@@ -208,11 +208,11 @@ func put(record: DotTimerRecord) -> DotResult:
 			return bumped.wrap("Could not count the finish.")
 		previous.completions = completions
 		_cache_best(record.board_key(), record.player_id, previous)
-		return DotResult.success(_put_result(previous, false, leader, completions))
+		return GSResult.success(_put_result(previous, false, leader, completions))
 
 	var statements := _put_statements(record, previous, completions, key_params)
 
-	var wrote: DotResult = await driver.batch(statements)
+	var wrote: GSResult = await driver.batch(statements)
 	queries += statements.size()
 	if not wrote.ok:
 		return wrote.wrap("Could not file the record.")
@@ -221,13 +221,13 @@ func put(record: DotTimerRecord) -> DotResult:
 	var board := record.board_key()
 	var after := await _select_record(record.map_id, record.track, record.style_id, record.player_id, record.stage)
 	if not after.ok or after.value == null:
-		return after if not after.ok else DotResult.fail(DotError.CODE_IO, "The record vanished as it was filed.")
-	var kept: DotTimerRecord = after.value
+		return after if not after.ok else GSResult.fail(GSError.CODE_IO, "The record vanished as it was filed.")
+	var kept: GSTimerRecord = after.value
 	if not _same_time(kept.time, record.time):
 		_cache_best(board, record.player_id, kept)
-		return DotResult.success(_put_result(kept, false, leader, kept.completions))
+		return GSResult.success(_put_result(kept, false, leader, kept.completions))
 
-	var faster: DotResult = await driver.query_value(
+	var faster: GSResult = await driver.query_value(
 		"SELECT COUNT(*) AS n FROM %s WHERE %s AND time < ?" % [table("records"), BOARD_WHERE],
 		_board_params(record.map_id, record.track, record.style_id, record.stage) + [kept.time], 0
 	)
@@ -244,10 +244,10 @@ func put(record: DotTimerRecord) -> DotResult:
 	# `previous_record` is the leader before the write; `was_record` is whether this run took first place.
 	var result := _put_result(previous, true, leader, kept.completions)
 	result["was_record"] = was_record
-	return DotResult.success(result)
+	return GSResult.success(result)
 
 
-func _put_statements(record: DotTimerRecord, previous: DotTimerRecord, completions: int, key_params: Array) -> Array:
+func _put_statements(record: GSTimerRecord, previous: GSTimerRecord, completions: int, key_params: Array) -> Array:
 	var statements: Array = []
 	if previous == null:
 		# Insert-or-ignore: a retried first time succeeds twice and the update keeps the faster.
@@ -274,8 +274,8 @@ func _put_statements(record: DotTimerRecord, previous: DotTimerRecord, completio
 	return statements
 
 
-func _log_history(record: DotTimerRecord, kept: DotTimerRecord, previous: DotTimerRecord, leader: DotTimerRecord, was_record: bool) -> void:
-	var logged: DotResult = await _execute(
+func _log_history(record: GSTimerRecord, kept: GSTimerRecord, previous: GSTimerRecord, leader: GSTimerRecord, was_record: bool) -> void:
+	var logged: GSResult = await _execute(
 		driver.upsert_sql(table("history"),
 			PackedStringArray(["map", "track", "style", "stage", "player", "set_at", "time",
 				"previous_time", "record_time_before", "was_record", "data"]),
@@ -290,7 +290,7 @@ func _log_history(record: DotTimerRecord, kept: DotTimerRecord, previous: DotTim
 	)
 	if not logged.ok:
 		# The record is filed; a missing history line is not worth refusing the run over.
-		DotLog.warn(CHANNEL, "a record was filed but its history line was not", {"why": logged.error.message})
+		GSLog.warn(CHANNEL, "a record was filed but its history line was not", {"why": logged.error.message})
 
 
 ## Whether two stored times are the same run. Exactly, unless a float lost its last bits
@@ -300,7 +300,7 @@ static func _same_time(a: float, b: float) -> bool:
 
 
 func _put_result(
-	previous: DotTimerRecord, improved: bool, leader: DotTimerRecord, completions: int
+	previous: GSTimerRecord, improved: bool, leader: GSTimerRecord, completions: int
 ) -> Dictionary:
 	return {
 		"previous": previous,
@@ -313,12 +313,12 @@ func _put_result(
 func top(
 	map_id: StringName, track: int, style_id: StringName,
 	limit: int = 10, offset: int = 0, stage: int = 0
-) -> DotResult:
-	var board := DotTimerRecord.board_key_of(map_id, track, style_id, stage)
+) -> GSResult:
+	var board := GSTimerRecord.board_key_of(map_id, track, style_id, stage)
 
 	if offset == 0 and limit <= cache_rows and _fresh(_top_cache.get(board)):
 		cache_hits += 1
-		return DotResult.success(_copy_rows(_top_cache[board]["rows"], limit))
+		return GSResult.success(_copy_rows(_top_cache[board]["rows"], limit))
 
 	var fetch := maxi(limit, cache_rows) if offset == 0 else limit
 	var res := await _query(
@@ -328,26 +328,26 @@ func top(
 	if not res.ok:
 		return res
 
-	var rows: Array[DotTimerRecord] = []
+	var rows: Array[GSTimerRecord] = []
 	for row in (res.value as Array):
 		rows.append(_record_from(row))
 
 	if offset == 0 and cache_seconds > 0.0:
 		_top_cache[board] = {"at": _now(), "rows": rows, "limit": fetch}
 
-	return DotResult.success(_copy_rows(rows, limit))
+	return GSResult.success(_copy_rows(rows, limit))
 
 
 func best_for(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
-) -> DotResult:
-	var board := DotTimerRecord.board_key_of(map_id, track, style_id, stage)
+) -> GSResult:
+	var board := GSTimerRecord.board_key_of(map_id, track, style_id, stage)
 	var cached: Variant = _best_cache.get("%s|%s" % [board, String(player_id)])
 	if _fresh(cached):
 		cache_hits += 1
 		var value: Variant = cached["record"]
-		return DotResult.success((value as DotTimerRecord).duplicate_record() if value is DotTimerRecord else null)
+		return GSResult.success((value as GSTimerRecord).duplicate_record() if value is GSTimerRecord else null)
 
 	var res := await _select_record(map_id, track, style_id, player_id, stage)
 	if res.ok:
@@ -358,38 +358,38 @@ func best_for(
 func rank_of(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	var mine := await best_for(map_id, track, style_id, player_id, stage)
 	if not mine.ok:
 		return mine
 	if mine.value == null:
-		return DotResult.success(0)
-	return await rank_for_time(map_id, track, style_id, (mine.value as DotTimerRecord).time, stage)
+		return GSResult.success(0)
+	return await rank_for_time(map_id, track, style_id, (mine.value as GSTimerRecord).time, stage)
 
 
 func rank_for_time(
 	map_id: StringName, track: int, style_id: StringName,
 	time: float, stage: int = 0
-) -> DotResult:
-	var res: DotResult = await driver.query_value(
+) -> GSResult:
+	var res: GSResult = await driver.query_value(
 		"SELECT COUNT(*) AS n FROM %s WHERE %s AND time < ?" % [table("records"), BOARD_WHERE],
 		_board_params(map_id, track, style_id, stage) + [time], 0
 	)
 	queries += 1
 	if not res.ok:
 		return res
-	return DotResult.success(int(res.value) + 1)
+	return GSResult.success(int(res.value) + 1)
 
 
 func count_on(
 	map_id: StringName, track: int, style_id: StringName, stage: int = 0
-) -> DotResult:
-	var board := DotTimerRecord.board_key_of(map_id, track, style_id, stage)
+) -> GSResult:
+	var board := GSTimerRecord.board_key_of(map_id, track, style_id, stage)
 	if _fresh(_count_cache.get(board)):
 		cache_hits += 1
-		return DotResult.success(int(_count_cache[board]["n"]))
+		return GSResult.success(int(_count_cache[board]["n"]))
 
-	var res: DotResult = await driver.query_value(
+	var res: GSResult = await driver.query_value(
 		"SELECT COUNT(*) AS n FROM %s WHERE %s" % [table("records"), BOARD_WHERE],
 		_board_params(map_id, track, style_id, stage), 0
 	)
@@ -398,34 +398,34 @@ func count_on(
 		return res
 	if cache_seconds > 0.0:
 		_count_cache[board] = {"at": _now(), "n": int(res.value)}
-	return DotResult.success(int(res.value))
+	return GSResult.success(int(res.value))
 
 
 func remove(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
-) -> DotResult:
+) -> GSResult:
 	var existing := await _select_record(map_id, track, style_id, player_id, stage)
 	if not existing.ok:
 		return existing
 	if existing.value == null:
-		return DotResult.success(false)
+		return GSResult.success(false)
 	var res := await _execute(
 		"DELETE FROM %s WHERE %s AND player = ?" % [table("records"), BOARD_WHERE],
 		_board_params(map_id, track, style_id, stage) + [String(player_id)]
 	)
 	if not res.ok:
 		return res
-	_forget_board(DotTimerRecord.board_key_of(map_id, track, style_id, stage))
-	return DotResult.success(true)
+	_forget_board(GSTimerRecord.board_key_of(map_id, track, style_id, stage))
+	return GSResult.success(true)
 
 
-func set_points(records: Array) -> DotResult:
+func set_points(records: Array) -> GSResult:
 	var statements: Array = []
 	for record in records:
-		if not (record is DotTimerRecord):
+		if not (record is GSTimerRecord):
 			continue
-		var r: DotTimerRecord = record
+		var r: GSTimerRecord = record
 		statements.append([
 			"UPDATE %s SET points = ? WHERE %s AND player = ?" % [table("records"), BOARD_WHERE],
 			[r.points] + _board_params(r.map_id, r.track, r.style_id, r.stage) + [String(r.player_id)],
@@ -433,13 +433,13 @@ func set_points(records: Array) -> DotResult:
 		_top_cache.erase(r.board_key())
 		_best_cache.erase("%s|%s" % [r.board_key(), String(r.player_id)])
 	if statements.is_empty():
-		return DotResult.success(0)
-	var res: DotResult = await driver.batch(statements)
+		return GSResult.success(0)
+	var res: GSResult = await driver.batch(statements)
 	queries += statements.size()
-	return res if not res.ok else DotResult.success(statements.size())
+	return res if not res.ok else GSResult.success(statements.size())
 
 
-func records_of(player_id: StringName, filter: Dictionary = {}) -> DotResult:
+func records_of(player_id: StringName, filter: Dictionary = {}) -> GSResult:
 	var where := PackedStringArray(["player = ?"])
 	var params: Array = [String(player_id)]
 	_filter_sql(filter, where, params)
@@ -450,7 +450,7 @@ func records_of(player_id: StringName, filter: Dictionary = {}) -> DotResult:
 	return _records_result(res)
 
 
-func records_on_map(map_id: StringName) -> DotResult:
+func records_on_map(map_id: StringName) -> GSResult:
 	var res := await _query(
 		"SELECT * FROM %s WHERE map = ? ORDER BY track, style, stage, time" % table("records"),
 		[String(map_id)]
@@ -458,12 +458,12 @@ func records_on_map(map_id: StringName) -> DotResult:
 	return _records_result(res)
 
 
-func record_count(player_id: StringName, filter: Dictionary = {}) -> DotResult:
+func record_count(player_id: StringName, filter: Dictionary = {}) -> GSResult:
 	var where := PackedStringArray(["r.player = ?"])
 	var params: Array = [String(player_id)]
 	_filter_sql(filter, where, params, "r.")
 	# A board is held when nobody on it is strictly faster: a tie for first counts.
-	var res: DotResult = await driver.query_value(
+	var res: GSResult = await driver.query_value(
 		("SELECT COUNT(*) AS n FROM %s r WHERE %s AND NOT EXISTS (SELECT 1 FROM %s b "
 		+ "WHERE b.map = r.map AND b.track = r.track AND b.style = r.style AND b.stage = r.stage "
 		+ "AND b.time < r.time)") % [table("records"), " AND ".join(where), table("records")],
@@ -472,10 +472,10 @@ func record_count(player_id: StringName, filter: Dictionary = {}) -> DotResult:
 	queries += 1
 	if not res.ok:
 		return res
-	return DotResult.success(int(res.value))
+	return GSResult.success(int(res.value))
 
 
-func recent(limit: int = 20, filter: Dictionary = {}) -> DotResult:
+func recent(limit: int = 20, filter: Dictionary = {}) -> GSResult:
 	var where := PackedStringArray()
 	var params: Array = []
 	if bool(filter.get("records_only", true)):
@@ -491,14 +491,14 @@ func recent(limit: int = 20, filter: Dictionary = {}) -> DotResult:
 	var out: Array[Dictionary] = []
 	for row in (res.value as Array):
 		var data := _json_dict(row.get("data"))
-		var record := DotTimerRecord.from_dictionary(data) if not data.is_empty() else _record_from(row)
+		var record := GSTimerRecord.from_dictionary(data) if not data.is_empty() else _record_from(row)
 		out.append({
 			"record": record,
 			"previous_time": float(row.get("previous_time", -1.0)),
 			"previous_record_time": float(row.get("record_time_before", -1.0)),
 			"was_record": _bool(row.get("was_record", 0)),
 		})
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
 static func _filter_sql(filter: Dictionary, where: PackedStringArray, params: Array, alias: String = "") -> void:
@@ -517,37 +517,37 @@ static func _filter_sql(filter: Dictionary, where: PackedStringArray, params: Ar
 		params.append(stage)
 
 
-func _records_result(res: DotResult) -> DotResult:
+func _records_result(res: GSResult) -> GSResult:
 	if not res.ok:
 		return res
-	var out: Array[DotTimerRecord] = []
+	var out: Array[GSTimerRecord] = []
 	for row in (res.value as Array):
 		out.append(_record_from(row))
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
 func wipe_board(
 	map_id: StringName, track: int, style_id: StringName, stage: int = -1
-) -> DotResult:
+) -> GSResult:
 	var where := "map = ? AND track = ? AND style = ?"
 	var params: Array = [String(map_id), track, String(style_id)]
 	if stage >= 0:
 		where += " AND stage = ?"
 		params.append(stage)
-	var counted: DotResult = await driver.query_value(
+	var counted: GSResult = await driver.query_value(
 		"SELECT COUNT(*) AS n FROM %s WHERE %s" % [table("records"), where], params, 0)
 	var res := await _execute("DELETE FROM %s WHERE %s" % [table("records"), where], params)
 	if not res.ok:
 		return res
 	_clear_cache()
-	return DotResult.success(int(counted.value) if counted.ok else 0)
+	return GSResult.success(int(counted.value) if counted.ok else 0)
 
 
-func wipe_player(player_id: StringName) -> DotResult:
+func wipe_player(player_id: StringName) -> GSResult:
 	var id := String(player_id)
-	var counted: DotResult = await driver.query_value(
+	var counted: GSResult = await driver.query_value(
 		"SELECT COUNT(*) AS n FROM %s WHERE player = ?" % table("records"), [id], 0)
-	var res: DotResult = await driver.batch([
+	var res: GSResult = await driver.batch([
 		["DELETE FROM %s WHERE player = ?" % table("records"), [id]],
 		["DELETE FROM %s WHERE player = ?" % table("history"), [id]],
 		["DELETE FROM %s WHERE player = ?" % table("players"), [id]],
@@ -558,14 +558,14 @@ func wipe_player(player_id: StringName) -> DotResult:
 	if not res.ok:
 		return res
 	_clear_cache()
-	return DotResult.success(int(counted.value) if counted.ok else 0)
+	return GSResult.success(int(counted.value) if counted.ok else 0)
 
 
-func wipe_map(map_id: StringName) -> DotResult:
+func wipe_map(map_id: StringName) -> GSResult:
 	var id := String(map_id)
-	var counted: DotResult = await driver.query_value(
+	var counted: GSResult = await driver.query_value(
 		"SELECT COUNT(*) AS n FROM %s WHERE map = ?" % table("records"), [id], 0)
-	var res: DotResult = await driver.batch([
+	var res: GSResult = await driver.batch([
 		["DELETE FROM %s WHERE map = ?" % table("records"), [id]],
 		["DELETE FROM %s WHERE map = ?" % table("history"), [id]],
 		["DELETE FROM %s WHERE map = ?" % table("progress"), [id]],
@@ -576,15 +576,15 @@ func wipe_map(map_id: StringName) -> DotResult:
 	if not res.ok:
 		return res
 	_clear_cache()
-	return DotResult.success(int(counted.value) if counted.ok else 0)
+	return GSResult.success(int(counted.value) if counted.ok else 0)
 
 
 
 func note_player(
 	player_id: StringName, name: String, seen_at: int, playtime_add: float = 0.0
-) -> DotResult:
+) -> GSResult:
 	var id := String(player_id)
-	var existing: DotResult = await driver.query_one(
+	var existing: GSResult = await driver.query_one(
 		"SELECT player FROM %s WHERE player = ?" % table("players"), [id])
 	queries += 1
 	if not existing.ok:
@@ -596,23 +596,23 @@ func note_player(
 				PackedStringArray(["player"]), []),
 			[id, name, 0.0, seen_at, seen_at, maxf(playtime_add, 0.0)]
 		)
-		return made if not made.ok else DotResult.success(true)
+		return made if not made.ok else GSResult.success(true)
 	var sql := "UPDATE %s SET last_seen = ?, playtime = playtime + ?" % table("players")
 	var params: Array = [seen_at, maxf(playtime_add, 0.0)]
 	if name != "":
 		sql += ", name = ?"
 		params.append(name)
 	var res := await _execute(sql + " WHERE player = ?", params + [id])
-	return res if not res.ok else DotResult.success(true)
+	return res if not res.ok else GSResult.success(true)
 
 
-func player_info(player_id: StringName) -> DotResult:
-	var res: DotResult = await driver.query_one(
+func player_info(player_id: StringName) -> GSResult:
+	var res: GSResult = await driver.query_one(
 		"SELECT * FROM %s WHERE player = ?" % table("players"), [String(player_id)])
 	queries += 1
 	if not res.ok or res.value == null:
 		return res
-	return DotResult.success(_player_row(res.value))
+	return GSResult.success(_player_row(res.value))
 
 
 static func _player_row(row: Dictionary) -> Dictionary:
@@ -628,7 +628,7 @@ static func _player_row(row: Dictionary) -> Dictionary:
 
 func refresh_player_points(
 	player_ids: Array, weighting: float = 1.0, limit: int = 0
-) -> DotResult:
+) -> GSResult:
 	var ids: Array = []
 	for id in player_ids:
 		ids.append(str(id))
@@ -659,22 +659,22 @@ func refresh_player_points(
 		var statements: Array = []
 		var now := int(Time.get_unix_time_from_system())
 		for p in chunk:
-			var total := DotTimerPoints.weighted_total(points_by.get(p, []), weighting, limit)
+			var total := GSTimerPoints.weighted_total(points_by.get(p, []), weighting, limit)
 			statements.append([
 				driver.upsert_sql(table("players"),
 					PackedStringArray(["player", "name", "points", "first_seen", "last_seen", "playtime"]),
 					PackedStringArray(["player"]), ["points"]),
 				[p, names.get(p, p), total, now, now, 0.0],
 			])
-		var wrote: DotResult = await driver.batch(statements)
+		var wrote: GSResult = await driver.batch(statements)
 		queries += statements.size()
 		if not wrote.ok:
 			return wrote
 		done += chunk.size()
-	return DotResult.success(done)
+	return GSResult.success(done)
 
 
-func top_players(limit: int = 10, offset: int = 0) -> DotResult:
+func top_players(limit: int = 10, offset: int = 0) -> GSResult:
 	var res := await _query(
 		"SELECT player, name, points FROM %s WHERE points > 0 ORDER BY points DESC, player ASC LIMIT ? OFFSET ?" % table("players"),
 		[limit, maxi(offset, 0)]
@@ -684,10 +684,10 @@ func top_players(limit: int = 10, offset: int = 0) -> DotResult:
 	var rows: Array = res.value
 	var out: Array[Dictionary] = []
 	if rows.is_empty():
-		return DotResult.success(out)
+		return GSResult.success(out)
 	# Ties share a rank, so the first row of a page needs one COUNT to know where it is.
 	var first_points := float(rows[0]["points"])
-	var above: DotResult = await driver.query_value(
+	var above: GSResult = await driver.query_value(
 		"SELECT COUNT(*) AS n FROM %s WHERE points > ?" % table("players"), [first_points], 0)
 	queries += 1
 	var rank := int(above.value) + 1 if above.ok else offset + 1
@@ -700,34 +700,34 @@ func top_players(limit: int = 10, offset: int = 0) -> DotResult:
 			"points": float(rows[i]["points"]),
 			"rank": rank,
 		})
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
-func player_rank(player_id: StringName) -> DotResult:
+func player_rank(player_id: StringName) -> GSResult:
 	var info := await player_info(player_id)
 	if not info.ok:
 		return info
 	var points := float((info.value as Dictionary)["points"]) if info.value != null else 0.0
-	var total: DotResult = await driver.query_value(
+	var total: GSResult = await driver.query_value(
 		"SELECT COUNT(*) AS n FROM %s WHERE points > 0" % table("players"), [], 0)
 	queries += 1
 	if not total.ok:
 		return total
 	if points <= 0.0:
-		return DotResult.success({"rank": 0, "total": int(total.value), "points": 0.0})
-	var above: DotResult = await driver.query_value(
+		return GSResult.success({"rank": 0, "total": int(total.value), "points": 0.0})
+	var above: GSResult = await driver.query_value(
 		"SELECT COUNT(*) AS n FROM %s WHERE points > ?" % table("players"), [points], 0)
 	queries += 1
 	if not above.ok:
 		return above
-	return DotResult.success({"rank": int(above.value) + 1, "total": int(total.value), "points": points})
+	return GSResult.success({"rank": int(above.value) + 1, "total": int(total.value), "points": points})
 
 
 
-func put_map(info: Dictionary) -> DotResult:
+func put_map(info: Dictionary) -> GSResult:
 	var id := str(info.get("map", ""))
 	if id == "":
-		return DotResult.fail(DotError.CODE_INVALID, "A map needs an id.")
+		return GSResult.fail(GSError.CODE_INVALID, "A map needs an id.")
 	var existing := await map_info(StringName(id))
 	var merged: Dictionary = existing.value if existing.ok and existing.value != null else {}
 	for key in info:
@@ -744,16 +744,16 @@ func put_map(info: Dictionary) -> DotResult:
 			1 if bool(merged.get("ranked", true)) else 0, str(merged.get("mapper", "")),
 			JSON.stringify(extra), int(Time.get_unix_time_from_system())]
 	)
-	return res if not res.ok else DotResult.success(true)
+	return res if not res.ok else GSResult.success(true)
 
 
-func map_info(map_id: StringName) -> DotResult:
-	var res: DotResult = await driver.query_one(
+func map_info(map_id: StringName) -> GSResult:
+	var res: GSResult = await driver.query_one(
 		"SELECT * FROM %s WHERE map = ?" % table("maps"), [String(map_id)])
 	queries += 1
 	if not res.ok or res.value == null:
 		return res
-	return DotResult.success(_map_row(res.value))
+	return GSResult.success(_map_row(res.value))
 
 
 static func _map_row(row: Dictionary) -> Dictionary:
@@ -768,21 +768,21 @@ static func _map_row(row: Dictionary) -> Dictionary:
 	return out
 
 
-func maps() -> DotResult:
+func maps() -> GSResult:
 	var res := await _query("SELECT * FROM %s ORDER BY map" % table("maps"))
 	if not res.ok:
 		return res
 	var out: Array[Dictionary] = []
 	for row in (res.value as Array):
 		out.append(_map_row(row))
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
 
 func note_progress(
 	player_id: StringName, map_id: StringName, track: int, style_id: StringName,
 	attempts: int, seconds: float, finished: bool
-) -> DotResult:
+) -> GSResult:
 	var key := [String(player_id), String(map_id), track, String(style_id)]
 	var existing := await progress_for(player_id, map_id, track, style_id)
 	if not existing.ok:
@@ -795,7 +795,7 @@ func note_progress(
 				PackedStringArray(["player", "map", "track", "style"]), []),
 			key + [maxi(attempts, 0), 1 if finished else 0, spent, spent if finished else -1.0]
 		)
-		return made if not made.ok else DotResult.success(true)
+		return made if not made.ok else GSResult.success(true)
 	var sql := "UPDATE %s SET attempts = attempts + ?, time_spent = time_spent + ?" % table("progress")
 	var params: Array = [maxi(attempts, 0), maxf(seconds, 0.0)]
 	if finished:
@@ -805,20 +805,20 @@ func note_progress(
 			sql += ", time_to_first = ?"
 			params.append(float((existing.value as Dictionary)["time_spent"]) + maxf(seconds, 0.0))
 	var res := await _execute(sql + " WHERE player = ? AND map = ? AND track = ? AND style = ?", params + key)
-	return res if not res.ok else DotResult.success(true)
+	return res if not res.ok else GSResult.success(true)
 
 
 func progress_for(
 	player_id: StringName, map_id: StringName, track: int, style_id: StringName
-) -> DotResult:
-	var res: DotResult = await driver.query_one(
+) -> GSResult:
+	var res: GSResult = await driver.query_one(
 		"SELECT * FROM %s WHERE player = ? AND map = ? AND track = ? AND style = ?" % table("progress"),
 		[String(player_id), String(map_id), track, String(style_id)])
 	queries += 1
 	if not res.ok or res.value == null:
 		return res
 	var row: Dictionary = res.value
-	return DotResult.success({
+	return GSResult.success({
 		"attempts": int(row.get("attempts", 0)),
 		"completions": int(row.get("completions", 0)),
 		"time_spent": float(row.get("time_spent", 0.0)),
@@ -827,17 +827,17 @@ func progress_for(
 
 
 
-func save_resume(player_id: StringName, map_id: StringName, state: Dictionary) -> DotResult:
+func save_resume(player_id: StringName, map_id: StringName, state: Dictionary) -> GSResult:
 	var res := await _execute(
 		driver.upsert_sql(table("resume"), PackedStringArray(["player", "map", "state", "saved_at"]),
 			PackedStringArray(["player", "map"])),
 		[String(player_id), String(map_id), JSON.stringify(state), int(Time.get_unix_time_from_system())]
 	)
-	return res if not res.ok else DotResult.success(true)
+	return res if not res.ok else GSResult.success(true)
 
 
-func take_resume(player_id: StringName, map_id: StringName) -> DotResult:
-	var res: DotResult = await driver.query_one(
+func take_resume(player_id: StringName, map_id: StringName) -> GSResult:
+	var res: GSResult = await driver.query_one(
 		"SELECT state FROM %s WHERE player = ? AND map = ?" % table("resume"),
 		[String(player_id), String(map_id)])
 	queries += 1
@@ -849,7 +849,7 @@ func take_resume(player_id: StringName, map_id: StringName) -> DotResult:
 	if not gone.ok:
 		return gone
 	var state := _json_dict((res.value as Dictionary).get("state"))
-	return DotResult.success(state if not state.is_empty() else null)
+	return GSResult.success(state if not state.is_empty() else null)
 
 
 
@@ -857,7 +857,7 @@ func peek_top(
 	map_id: StringName, track: int, style_id: StringName,
 	limit: int = 10, stage: int = 0
 ) -> Variant:
-	var board := DotTimerRecord.board_key_of(map_id, track, style_id, stage)
+	var board := GSTimerRecord.board_key_of(map_id, track, style_id, stage)
 	var cached: Variant = _top_cache.get(board)
 	if not _fresh(cached):
 		_refresh_top(map_id, track, style_id, stage)
@@ -870,20 +870,20 @@ func peek_best(
 	map_id: StringName, track: int, style_id: StringName,
 	player_id: StringName, stage: int = 0
 ) -> Variant:
-	var board := DotTimerRecord.board_key_of(map_id, track, style_id, stage)
+	var board := GSTimerRecord.board_key_of(map_id, track, style_id, stage)
 	var cached: Variant = _best_cache.get("%s|%s" % [board, String(player_id)])
 	if not _fresh(cached):
 		_refresh_best(map_id, track, style_id, player_id, stage)
 	if cached is Dictionary:
 		var value: Variant = cached["record"]
-		return (value as DotTimerRecord).duplicate_record() if value is DotTimerRecord else false
+		return (value as GSTimerRecord).duplicate_record() if value is GSTimerRecord else false
 	return null
 
 
 ## Fetches a board's top in the background. Not awaited by its caller — a HUD that
 ## peeked — and guarded so a HUD peeking every frame starts one fetch, not sixty.
 func _refresh_top(map_id: StringName, track: int, style_id: StringName, stage: int) -> void:
-	var key := "top|" + DotTimerRecord.board_key_of(map_id, track, style_id, stage)
+	var key := "top|" + GSTimerRecord.board_key_of(map_id, track, style_id, stage)
 	if _refreshing.has(key) or not is_open():
 		return
 	_refreshing[key] = true
@@ -895,7 +895,7 @@ func _refresh_top(map_id: StringName, track: int, style_id: StringName, stage: i
 func _refresh_best(
 	map_id: StringName, track: int, style_id: StringName, player_id: StringName, stage: int
 ) -> void:
-	var board := DotTimerRecord.board_key_of(map_id, track, style_id, stage)
+	var board := GSTimerRecord.board_key_of(map_id, track, style_id, stage)
 	var key := "best|%s|%s" % [board, String(player_id)]
 	if _refreshing.has(key) or not is_open():
 		return
@@ -905,7 +905,7 @@ func _refresh_best(
 	_refreshing.erase(key)
 
 
-func _cache_best(board: String, player_id: StringName, record: DotTimerRecord) -> void:
+func _cache_best(board: String, player_id: StringName, record: GSTimerRecord) -> void:
 	if cache_seconds <= 0.0:
 		return
 	_best_cache["%s|%s" % [board, String(player_id)]] = {"at": _now(), "record": record}
@@ -941,10 +941,10 @@ static func _now() -> float:
 	return float(Time.get_ticks_msec()) / 1000.0
 
 
-static func _copy_rows(rows: Array, limit: int) -> Array[DotTimerRecord]:
-	var out: Array[DotTimerRecord] = []
+static func _copy_rows(rows: Array, limit: int) -> Array[GSTimerRecord]:
+	var out: Array[GSTimerRecord] = []
 	for i in range(mini(limit, rows.size())):
-		out.append((rows[i] as DotTimerRecord).duplicate_record())
+		out.append((rows[i] as GSTimerRecord).duplicate_record())
 	return out
 
 

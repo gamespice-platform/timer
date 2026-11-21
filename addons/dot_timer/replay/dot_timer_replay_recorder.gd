@@ -1,7 +1,7 @@
-class_name DotTimerReplayRecorder
+class_name GSTimerReplayRecorder
 extends RefCounted
 
-## Records a run into a [DotTimerReplay], one frame per simulated tick, with a bounded cost.
+## Records a run into a [GSTimerReplay], one frame per simulated tick, with a bounded cost.
 ## Affordable only because of a hard frame cap and [method discard] on every run that beat nothing.
 
 const CHANNEL := "timer.replay"
@@ -10,12 +10,12 @@ const CHANNEL := "timer.replay"
 ## Twenty minutes bounds memory: at 128 Hz that is 154,000 frames, about 900 KB packed.
 const MAX_SECONDS := 1200.0
 
-## The ceiling in force. [member DotTimerConfig.max_replay_seconds] lands here
+## The ceiling in force. [member GSTimerConfig.max_replay_seconds] lands here
 ## through the manager; the constant is only the default. It was the only value
 ## for a while, and the config's knob was documented and read by nothing.
 var max_seconds: float = MAX_SECONDS
 
-var replay: DotTimerReplay = null
+var replay: GSTimerReplay = null
 
 ## Whether frames are being taken.
 var recording: bool = false
@@ -32,14 +32,14 @@ var post_roll_seconds: float = 1.0
 
 ## A move further than this in one tick is a teleport, not motion, in metres. Far above any
 ## legitimate speed at a server tick rate (4 m a tick is 512 m/s at 128 Hz, 256 at 64), and
-## the game can always say so itself with [constant DotTimerReplay.FLAG_TELEPORT].
+## the game can always say so itself with [constant GSTimerReplay.FLAG_TELEPORT].
 var teleport_distance: float = 4.0
 
 ## The rolling run-up, newest last, capped at pre_roll_seconds.
-var _pre_roll: Array[DotTimerReplay.Frame] = []
+var _pre_roll: Array[GSTimerReplay.Frame] = []
 
 ## A finished replay still taking its run-out, and how many frames it still wants.
-var _trailing: DotTimerReplay = null
+var _trailing: GSTimerReplay = null
 var _trail_left: int = 0
 var _trail_done: bool = false
 
@@ -57,7 +57,7 @@ func begin(
 ) -> void:
 	# A new run ends the last one's run-out: its replay is written now, shorter.
 	end_trail()
-	replay = DotTimerReplay.new()
+	replay = GSTimerReplay.new()
 	replay.map_id = map_id
 	replay.track = track
 	replay.style_id = style_id
@@ -88,7 +88,7 @@ func capture(
 
 	if replay.frames.size() >= int(maxf(max_seconds, 0.1) * float(replay.tick_rate)):
 		if overflowed == 0:
-			DotLog.warn(CHANNEL, "replay reached its frame cap; the rest is not recorded", {
+			GSLog.warn(CHANNEL, "replay reached its frame cap; the rest is not recorded", {
 				"map": String(replay.map_id), "frames": replay.frames.size()
 			})
 		overflowed += 1
@@ -102,7 +102,7 @@ func capture(
 ## [member teleport_distance] since the last tick is marked as a teleport.
 func feed(position: Vector3, yaw: float, pitch: float, flags: int = 0, buttons: int = 0) -> void:
 	if _have_last and position.distance_to(_last_position) > teleport_distance:
-		flags |= DotTimerReplay.FLAG_TELEPORT
+		flags |= GSTimerReplay.FLAG_TELEPORT
 	_last_position = position
 	_have_last = true
 
@@ -122,7 +122,7 @@ func feed(position: Vector3, yaw: float, pitch: float, flags: int = 0, buttons: 
 	if cap <= 0:
 		_pre_roll.clear()
 		return
-	var frame := DotTimerReplay.Frame.new()
+	var frame := GSTimerReplay.Frame.new()
 	frame.position = position
 	frame.yaw = yaw
 	frame.pitch = pitch
@@ -163,7 +163,7 @@ func _rate() -> int:
 
 ## Finishes and hands back the replay. Null if nothing was recorded.
 ## [param time] is the run's own time, not frames over rate: the two differ by the sub-tick offsets.
-func finish(time: float) -> DotTimerReplay:
+func finish(time: float) -> GSTimerReplay:
 	recording = false
 
 	if replay == null or replay.frames.is_empty():

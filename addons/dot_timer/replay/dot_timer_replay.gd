@@ -1,8 +1,8 @@
-class_name DotTimerReplay
+class_name GSTimerReplay
 extends RefCounted
 
 ## A recorded run: one frame per simulated tick, quantised and delta-encoded small enough to keep.
-## Nothing here interpolates or plays back; that is [DotTimerReplayPlayer]'s job, which keeps the container dumb.
+## Nothing here interpolates or plays back; that is [GSTimerReplayPlayer]'s job, which keeps the container dumb.
 
 ## Magic, so a truncated or wrong file is refused rather than misread.
 const MAGIC := 0x44525031  # "DRP1"
@@ -34,7 +34,7 @@ const FLAG_BUTTONS := 1 << 5
 const MAX_DELTA := 32767
 
 var map_id: StringName = &""
-var track: int = DotTimerTrack.MAIN
+var track: int = GSTimerTrack.MAIN
 var style_id: StringName = &"normal"
 var player_name: String = ""
 var tick_rate: int = 128
@@ -216,10 +216,10 @@ static func _get_string(reader: StreamPeerBuffer) -> Variant:
 	return (data[1] as PackedByteArray).get_string_from_utf8()
 
 
-static func from_bytes(bytes: PackedByteArray) -> DotResult:
+static func from_bytes(bytes: PackedByteArray) -> GSResult:
 	if bytes.size() < 16:
-		return DotResult.fail(
-			DotError.CODE_PARSE, "Too short to be a replay.", "%d bytes" % bytes.size()
+		return GSResult.fail(
+			GSError.CODE_PARSE, "Too short to be a replay.", "%d bytes" % bytes.size()
 		)
 
 	var reader := StreamPeerBuffer.new()
@@ -227,20 +227,20 @@ static func from_bytes(bytes: PackedByteArray) -> DotResult:
 	reader.data_array = bytes
 
 	if reader.get_u32() != MAGIC:
-		return DotResult.fail(
-			DotError.CODE_PARSE, "That is not a dot-timer replay."
+		return GSResult.fail(
+			GSError.CODE_PARSE, "That is not a dot-timer replay."
 		)
 
 	var version := reader.get_u8()
 
 	if version > FORMAT_VERSION:
-		return DotResult.fail(
-			DotError.CODE_VERSION,
+		return GSResult.fail(
+			GSError.CODE_VERSION,
 			"That replay was written by a newer version of dot-timer.",
 			"format %d, this build reads %d" % [version, FORMAT_VERSION]
 		)
 
-	var replay := DotTimerReplay.new()
+	var replay := GSTimerReplay.new()
 	var header := _read_header(reader, replay, version, bytes.size())
 	if not header.ok:
 		return header
@@ -252,15 +252,15 @@ static func from_bytes(bytes: PackedByteArray) -> DotResult:
 		replay.end_frame = replay.frames.size() - 1
 	replay.start_frame = clampi(replay.start_frame, 0, maxi(replay.frames.size() - 1, 0))
 
-	return DotResult.success(replay)
+	return GSResult.success(replay)
 
 
 ## Reads the header after the version byte into `replay`; succeeds with the frame count.
-static func _read_header(reader: StreamPeerBuffer, replay: DotTimerReplay, version: int, total: int) -> DotResult:
+static func _read_header(reader: StreamPeerBuffer, replay: GSTimerReplay, version: int, total: int) -> GSResult:
 	# Track, tick rate, time and recorded_at: 1 + 2 + 4 + 4.
 	if reader.get_available_bytes() < 11:
-		return DotResult.fail(
-			DotError.CODE_PARSE, "The replay header is truncated."
+		return GSResult.fail(
+			GSError.CODE_PARSE, "The replay header is truncated."
 		)
 
 	replay.track = reader.get_u8()
@@ -273,8 +273,8 @@ static func _read_header(reader: StreamPeerBuffer, replay: DotTimerReplay, versi
 	var name_text: Variant = _get_string(reader)
 
 	if map_text == null or style_text == null or name_text == null:
-		return DotResult.fail(
-			DotError.CODE_PARSE, "The replay header is truncated."
+		return GSResult.fail(
+			GSError.CODE_PARSE, "The replay header is truncated."
 		)
 
 	replay.map_id = StringName(map_text)
@@ -283,37 +283,37 @@ static func _read_header(reader: StreamPeerBuffer, replay: DotTimerReplay, versi
 
 	if version >= 2:
 		if reader.get_available_bytes() < 8:
-			return DotResult.fail(DotError.CODE_PARSE, "The replay header is truncated.")
+			return GSResult.fail(GSError.CODE_PARSE, "The replay header is truncated.")
 		replay.start_frame = reader.get_u32()
 		replay.end_frame = reader.get_u32()
 
 	if reader.get_available_bytes() < 4:
-		return DotResult.fail(
-			DotError.CODE_PARSE, "The replay ends before its frame count."
+		return GSResult.fail(
+			GSError.CODE_PARSE, "The replay ends before its frame count."
 		)
 
 	var count := reader.get_u32()
 
 	# A frame is at least 11 bytes; a count implying more than the buffer holds is corrupt or hostile, checked before allocating what a 32-bit count asks for.
 	if count > total:
-		return DotResult.fail(
-			DotError.CODE_PARSE,
+		return GSResult.fail(
+			GSError.CODE_PARSE,
 			"The replay claims more frames than its size allows.",
 			"%d frames in %d bytes" % [count, total]
 		)
 
-	return DotResult.success(count)
+	return GSResult.success(count)
 
 
-static func _read_frames(reader: StreamPeerBuffer, replay: DotTimerReplay, count: int) -> DotResult:
+static func _read_frames(reader: StreamPeerBuffer, replay: GSTimerReplay, count: int) -> GSResult:
 	var x := 0
 	var y := 0
 	var z := 0
 
 	for _i in range(count):
 		if reader.get_available_bytes() < 5:
-			return DotResult.fail(
-				DotError.CODE_PARSE,
+			return GSResult.fail(
+				GSError.CODE_PARSE,
 				"The replay ends in the middle of a frame.",
 				"%d of %d frames read" % [replay.frames.size(), count]
 			)
@@ -334,7 +334,7 @@ static func _read_frames(reader: StreamPeerBuffer, replay: DotTimerReplay, count
 		var buttons := 0
 		if flags & FLAG_BUTTONS:
 			if reader.get_available_bytes() < 1:
-				return DotResult.fail(DotError.CODE_PARSE, "The replay ends in the middle of a frame.")
+				return GSResult.fail(GSError.CODE_PARSE, "The replay ends in the middle of a frame.")
 			buttons = reader.get_u8()
 
 		replay.append(
@@ -349,41 +349,41 @@ static func _read_frames(reader: StreamPeerBuffer, replay: DotTimerReplay, count
 			buttons
 		)
 
-	return DotResult.success(true)
+	return GSResult.success(true)
 
 
-func save(path: String) -> DotResult:
+func save(path: String) -> GSResult:
 	var directory := path.get_base_dir()
 
 	if directory != "" and not DirAccess.dir_exists_absolute(directory):
 		var made := DirAccess.make_dir_recursive_absolute(directory)
 		if made != OK:
-			return DotResult.failure(DotError.from_engine(made, directory))
+			return GSResult.failure(GSError.from_engine(made, directory))
 
 	var file := FileAccess.open(path, FileAccess.WRITE)
 
 	if file == null:
-		return DotResult.failure(
-			DotError.from_engine(FileAccess.get_open_error(), path)
+		return GSResult.failure(
+			GSError.from_engine(FileAccess.get_open_error(), path)
 		)
 
 	file.store_buffer(to_bytes())
 	file.close()
 
-	DotWeb.sync_filesystem()
+	GSWeb.sync_filesystem()
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
-static func load_from(path: String) -> DotResult:
+static func load_from(path: String) -> GSResult:
 	if not FileAccess.file_exists(path):
-		return DotResult.fail(DotError.CODE_IO, "No replay there.", path)
+		return GSResult.fail(GSError.CODE_IO, "No replay there.", path)
 
 	var file := FileAccess.open(path, FileAccess.READ)
 
 	if file == null:
-		return DotResult.failure(
-			DotError.from_engine(FileAccess.get_open_error(), path)
+		return GSResult.failure(
+			GSError.from_engine(FileAccess.get_open_error(), path)
 		)
 
 	var bytes := file.get_buffer(file.get_length())
@@ -395,16 +395,16 @@ static func load_from(path: String) -> DotResult:
 func describe() -> Dictionary:
 	return {
 		"map": String(map_id),
-		"track": DotTimerTrack.short_name_of(track),
+		"track": GSTimerTrack.short_name_of(track),
 		"style": String(style_id),
 		"player": player_name,
-		"time": DotTimerRun.format_time(time),
+		"time": GSTimerRun.format_time(time),
 		"frames": frames.size(),
 		"bytes": to_bytes().size(),
 	}
 
 
 func _to_string() -> String:
-	return "DotTimerReplay(%s %s, %d frames)" % [
-		String(map_id), DotTimerRun.format_time(time), frames.size()
+	return "GSTimerReplay(%s %s, %d frames)" % [
+		String(map_id), GSTimerRun.format_time(time), frames.size()
 	]

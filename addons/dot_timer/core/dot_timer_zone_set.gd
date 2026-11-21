@@ -1,12 +1,12 @@
 @tool
-class_name DotTimerZoneSet
+class_name GSTimerZoneSet
 extends Resource
 
 ## Every zone in one map, and the file a mapper hands round: plain, hand-editable JSON carrying the map name and a hash.
-## Authoritative on the server, advisory on a client (which needs the zones only to draw them and predict). See [DotTimer].
+## Authoritative on the server, advisory on a client (which needs the zones only to draw them and predict). See [GSTimer].
 
-# No log channel: the document a mapper trades. Loading and saving return a DotResult
-# and problems() returns strings; DotTimerManager logs both, with the map it was loading.
+# No log channel: the document a mapper trades. Loading and saving return a GSResult
+# and problems() returns strings; GSTimerManager logs both, with the map it was loading.
 
 ## Format version written into every file.
 ## Bumped when a field's meaning changes, never when one is added: a reader that ignores unknown keys already handles additions.
@@ -16,7 +16,7 @@ const FORMAT_VERSION := 1
 ## An id, not a file path: a map may be delivered, mounted and versioned by GameSpice Cloud, so its path is a deployment detail.
 @export var map_id: StringName = &""
 
-@export var zones: Array[DotTimerZone] = []
+@export var zones: Array[GSTimerZone] = []
 
 ## Free-form notes: who drew them, when, what changed.
 @export var meta: Dictionary = {}
@@ -26,7 +26,7 @@ const FORMAT_VERSION := 1
 @export var next_id: int = 1
 
 
-func add(zone: DotTimerZone) -> DotTimerZone:
+func add(zone: GSTimerZone) -> GSTimerZone:
 	if zone == null:
 		return null
 
@@ -48,7 +48,7 @@ func remove_id(id: int) -> bool:
 	return false
 
 
-func get_zone(id: int) -> DotTimerZone:
+func get_zone(id: int) -> GSTimerZone:
 	for zone in zones:
 		if zone.id == id:
 			return zone
@@ -61,8 +61,8 @@ func clear() -> void:
 
 
 ## Every zone of one kind on one track. [param track] of -1 means any.
-func of_kind(kind: DotTimerZone.Kind, track: int = -1) -> Array[DotTimerZone]:
-	var out: Array[DotTimerZone] = []
+func of_kind(kind: GSTimerZone.Kind, track: int = -1) -> Array[GSTimerZone]:
+	var out: Array[GSTimerZone] = []
 
 	for zone in zones:
 		if zone.kind == kind and (track < 0 or zone.track == track):
@@ -72,7 +72,7 @@ func of_kind(kind: DotTimerZone.Kind, track: int = -1) -> Array[DotTimerZone]:
 
 
 ## The first zone of a kind on a track, or null.
-func first_of_kind(kind: DotTimerZone.Kind, track: int) -> DotTimerZone:
+func first_of_kind(kind: GSTimerZone.Kind, track: int) -> GSTimerZone:
 	for zone in zones:
 		if zone.kind == kind and zone.track == track:
 			return zone
@@ -84,7 +84,7 @@ func used_tracks() -> PackedInt32Array:
 	var seen := {}
 
 	for zone in zones:
-		if DotTimerTrack.is_valid(zone.track):
+		if GSTimerTrack.is_valid(zone.track):
 			seen[zone.track] = true
 
 	var out := PackedInt32Array(seen.keys())
@@ -99,8 +99,8 @@ func playable_tracks() -> PackedInt32Array:
 
 	for track in used_tracks():
 		if (
-			first_of_kind(DotTimerZone.Kind.START, track) != null
-			and first_of_kind(DotTimerZone.Kind.END, track) != null
+			first_of_kind(GSTimerZone.Kind.START, track) != null
+			and first_of_kind(GSTimerZone.Kind.END, track) != null
 		):
 			out.append(track)
 
@@ -112,18 +112,18 @@ func stage_count(track: int) -> int:
 	var highest := 0
 
 	for zone in zones:
-		if zone.kind == DotTimerZone.Kind.STAGE and zone.track == track:
+		if zone.kind == GSTimerZone.Kind.STAGE and zone.track == track:
 			highest = maxi(highest, int(zone.number))
 
 	return highest
 
 
 ## The stage zone numbered [param number] on [param track], or null.
-## What "go to stage 3" resolves against: this lookup plus the zone's [member DotTimerZone.destination].
-func stage_zone(track: int, number: int) -> DotTimerZone:
+## What "go to stage 3" resolves against: this lookup plus the zone's [member GSTimerZone.destination].
+func stage_zone(track: int, number: int) -> GSTimerZone:
 	for zone in zones:
 		if (
-			zone.kind == DotTimerZone.Kind.STAGE
+			zone.kind == GSTimerZone.Kind.STAGE
 			and zone.track == track
 			and int(zone.number) == number
 		):
@@ -149,30 +149,30 @@ func problems() -> PackedStringArray:
 		seen_ids[zone.id] = true
 
 	for track in used_tracks():
-		var starts := of_kind(DotTimerZone.Kind.START, track)
-		var ends := of_kind(DotTimerZone.Kind.END, track)
+		var starts := of_kind(GSTimerZone.Kind.START, track)
+		var ends := of_kind(GSTimerZone.Kind.END, track)
 
 		if starts.size() > 1:
 			out.append(
 				"%s has %d start zones; a track may have one"
-				% [DotTimerTrack.name_of(track), starts.size()]
+				% [GSTimerTrack.name_of(track), starts.size()]
 			)
 
 		if ends.size() > 1:
 			out.append(
 				"%s has %d end zones; a track may have one"
-				% [DotTimerTrack.name_of(track), ends.size()]
+				% [GSTimerTrack.name_of(track), ends.size()]
 			)
 
 		if starts.size() == 1 and ends.is_empty():
 			out.append(
 				"%s has a start and no end, so it can be begun and never finished"
-				% DotTimerTrack.name_of(track)
+				% GSTimerTrack.name_of(track)
 			)
 
 		if ends.size() == 1 and starts.is_empty():
 			out.append(
-				"%s has an end and no start" % DotTimerTrack.name_of(track)
+				"%s has an end and no start" % GSTimerTrack.name_of(track)
 			)
 
 		out.append_array(_stage_problems(track))
@@ -184,7 +184,7 @@ func problems() -> PackedStringArray:
 ## numbered differently from the map's own signage.
 func _stage_problems(track: int) -> PackedStringArray:
 	var out := PackedStringArray()
-	var stages := of_kind(DotTimerZone.Kind.STAGE, track)
+	var stages := of_kind(GSTimerZone.Kind.STAGE, track)
 	var numbers := {}
 
 	for zone in stages:
@@ -192,14 +192,14 @@ func _stage_problems(track: int) -> PackedStringArray:
 		if numbers.has(n):
 			out.append(
 				"%s has two stage zones numbered %d"
-				% [DotTimerTrack.name_of(track), n]
+				% [GSTimerTrack.name_of(track), n]
 			)
 		numbers[n] = true
 
 	for n in range(1, stages.size() + 1):
 		if not numbers.has(n):
 			out.append(
-				"%s is missing stage %d" % [DotTimerTrack.name_of(track), n]
+				"%s is missing stage %d" % [GSTimerTrack.name_of(track), n]
 			)
 
 	return out
@@ -218,8 +218,8 @@ func route_tracks() -> PackedInt32Array:
 
 	for zone in zones:
 		if zone.kind in [
-			DotTimerZone.Kind.START, DotTimerZone.Kind.END, DotTimerZone.Kind.STAGE
-		] and DotTimerTrack.is_valid(zone.track):
+			GSTimerZone.Kind.START, GSTimerZone.Kind.END, GSTimerZone.Kind.STAGE
+		] and GSTimerTrack.is_valid(zone.track):
 			seen[zone.track] = true
 
 	var out := PackedInt32Array(seen.keys())
@@ -250,18 +250,18 @@ func route_problems() -> PackedStringArray:
 	var pitless := pitless_tracks()
 
 	for track in routes:
-		var name := DotTimerTrack.name_of(track)
+		var name := GSTimerTrack.name_of(track)
 
 		for kind in [
-			DotTimerZone.Kind.START, DotTimerZone.Kind.END, DotTimerZone.Kind.SPAWN
+			GSTimerZone.Kind.START, GSTimerZone.Kind.END, GSTimerZone.Kind.SPAWN
 		]:
 			if first_of_kind(kind, track) == null:
 				out.append(
 					"%s is a route with no %s zone"
-					% [name, DotTimerZone.kind_name(kind).to_lower()]
+					% [name, GSTimerZone.kind_name(kind).to_lower()]
 				)
 
-		var has_pit := first_of_kind(DotTimerZone.Kind.RESPAWN, track) != null
+		var has_pit := first_of_kind(GSTimerZone.Kind.RESPAWN, track) != null
 
 		if not has_pit and not pitless.has(track):
 			out.append(
@@ -284,25 +284,25 @@ func route_problems() -> PackedStringArray:
 		if not routes.has(track):
 			out.append(
 				"%s is declared pitless and is not a route on this map"
-				% DotTimerTrack.name_of(track)
+				% GSTimerTrack.name_of(track)
 			)
 
 	return out
 
 
 ## Zones thin enough that a fast player can pass through one in a single tick. Advisory.
-## [code]fastest_fall_speed[/code] judges the Y extent; zero means the same as [code]fastest_speed[/code]. See [method DotTimerZone.is_thin_for].
+## [code]fastest_fall_speed[/code] judges the Y extent; zero means the same as [code]fastest_speed[/code]. See [method GSTimerZone.is_thin_for].
 func thin_zones(
 	fastest_speed: float,
 	tick_rate: int,
 	fastest_fall_speed: float = 0.0
-) -> Array[DotTimerZone]:
+) -> Array[GSTimerZone]:
 	var ticks := maxf(float(tick_rate), 1.0)
 	var per_tick := fastest_speed / ticks
 	var fall_per_tick := (
 		fastest_fall_speed / ticks if fastest_fall_speed > 0.0 else per_tick
 	)
-	var out: Array[DotTimerZone] = []
+	var out: Array[GSTimerZone] = []
 
 	for zone in zones:
 		if zone.is_point_kind():
@@ -337,7 +337,7 @@ func fingerprint() -> String:
 
 	# Sorted by a stable key rather than by id, so re-drawing a zone that ends up in
 	# the same place produces the same fingerprint and does not orphan the records.
-	sorted.sort_custom(func(a: DotTimerZone, b: DotTimerZone) -> bool:
+	sorted.sort_custom(func(a: GSTimerZone, b: GSTimerZone) -> bool:
 		if a.track != b.track:
 			return a.track < b.track
 		if a.kind != b.kind:
@@ -353,24 +353,24 @@ func fingerprint() -> String:
 			zone.number,
 		])
 
-	return DotHash.sha256_text("|".join(parts)).substr(0, 16)
+	return GSHash.sha256_text("|".join(parts)).substr(0, 16)
 
 
 func to_json(pretty: bool = true) -> String:
 	return JSON.stringify(to_dictionary(), "  " if pretty else "")
 
 
-static func from_dictionary(data: Dictionary) -> DotResult:
+static func from_dictionary(data: Dictionary) -> GSResult:
 	var format := int(data.get("format", 0))
 
 	if format > FORMAT_VERSION:
-		return DotResult.fail(
-			DotError.CODE_VERSION,
+		return GSResult.fail(
+			GSError.CODE_VERSION,
 			"These zones were written by a newer version of dot-timer.",
 			"format %d, this build reads %d" % [format, FORMAT_VERSION]
 		)
 
-	var set := DotTimerZoneSet.new()
+	var set := GSTimerZoneSet.new()
 	set.map_id = StringName(str(data.get("map", "")))
 
 	var meta_value: Variant = data.get("meta", {})
@@ -379,45 +379,45 @@ static func from_dictionary(data: Dictionary) -> DotResult:
 	var list_value: Variant = data.get("zones", [])
 
 	if not (list_value is Array):
-		return DotResult.fail(
-			DotError.CODE_PARSE, "The zones key is not a list."
+		return GSResult.fail(
+			GSError.CODE_PARSE, "The zones key is not a list."
 		)
 
 	var list: Array = list_value
 
 	for entry in list:
 		if entry is Dictionary:
-			set.add(DotTimerZone.from_dictionary(entry))
+			set.add(GSTimerZone.from_dictionary(entry))
 
 	# After the zones, so a file whose next_id is behind its contents is repaired
 	# rather than made to hand out ids that already exist.
 	set.next_id = maxi(int(data.get("next_id", 1)), set.next_id)
 
-	return DotResult.success(set)
+	return GSResult.success(set)
 
 
-static func from_json(text: String) -> DotResult:
+static func from_json(text: String) -> GSResult:
 	var parsed: Variant = JSON.parse_string(text)
 
 	if not (parsed is Dictionary):
-		return DotResult.fail(
-			DotError.CODE_PARSE, "A zone file must be a JSON object."
+		return GSResult.fail(
+			GSError.CODE_PARSE, "A zone file must be a JSON object."
 		)
 
 	return from_dictionary(parsed)
 
 
-static func load_json(path: String) -> DotResult:
+static func load_json(path: String) -> GSResult:
 	if not FileAccess.file_exists(path):
-		return DotResult.fail(
-			DotError.CODE_IO, "No zone file there.", path
+		return GSResult.fail(
+			GSError.CODE_IO, "No zone file there.", path
 		)
 
 	var file := FileAccess.open(path, FileAccess.READ)
 
 	if file == null:
-		return DotResult.failure(
-			DotError.from_engine(FileAccess.get_open_error(), path)
+		return GSResult.failure(
+			GSError.from_engine(FileAccess.get_open_error(), path)
 		)
 
 	var text := file.get_as_text()
@@ -431,19 +431,19 @@ static func load_json(path: String) -> DotResult:
 	return loaded
 
 
-func save_json(path: String) -> DotResult:
+func save_json(path: String) -> GSResult:
 	var directory := path.get_base_dir()
 
 	if directory != "" and not DirAccess.dir_exists_absolute(directory):
 		var made := DirAccess.make_dir_recursive_absolute(directory)
 		if made != OK:
-			return DotResult.failure(DotError.from_engine(made, directory))
+			return GSResult.failure(GSError.from_engine(made, directory))
 
 	var file := FileAccess.open(path, FileAccess.WRITE)
 
 	if file == null:
-		return DotResult.failure(
-			DotError.from_engine(FileAccess.get_open_error(), path)
+		return GSResult.failure(
+			GSError.from_engine(FileAccess.get_open_error(), path)
 		)
 
 	file.store_string(to_json())
@@ -452,16 +452,16 @@ func save_json(path: String) -> DotResult:
 	# The browser mirrors user:// into IndexedDB and does not flush on close. Every
 	# write path in this family calls this; a zone file that vanishes when the tab is
 	# closed is the failure it prevents.
-	DotWeb.sync_filesystem()
+	GSWeb.sync_filesystem()
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func describe() -> Dictionary:
 	var counts := {}
 
 	for zone in zones:
-		var key := DotTimerZone.kind_name(zone.kind)
+		var key := GSTimerZone.kind_name(zone.kind)
 		counts[key] = int(counts.get(key, 0)) + 1
 
 	return {
@@ -490,4 +490,4 @@ func describe_lines() -> PackedStringArray:
 
 
 func _to_string() -> String:
-	return "DotTimerZoneSet(%s, %d zones)" % [String(map_id), zones.size()]
+	return "GSTimerZoneSet(%s, %d zones)" % [String(map_id), zones.size()]

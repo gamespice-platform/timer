@@ -1,4 +1,4 @@
-class_name DotTimerZoneIndex
+class_name GSTimerZoneIndex
 extends RefCounted
 
 ## Answers "which zones is this point in" fast enough to ask thirty times a tick, with a uniform grid over the map.
@@ -6,7 +6,7 @@ extends RefCounted
 
 # No log channel: a derived lookup, rebuilt from a zone set and asked thirty times a
 # tick. It cannot fail, and what is wrong with the zones it indexes is reported by
-# DotTimerZoneSet.problems(), which the manager logs on load.
+# GSTimerZoneSet.problems(), which the manager logs on load.
 
 ## Edge length of a grid cell, in metres.
 ## Sized for zones: too small writes a big zone into hundreds of cells, too large makes every query return the whole map.
@@ -16,25 +16,25 @@ const CELL_SIZE := 8.0
 ## A map-wide volume would otherwise take tens of thousands of cells; past this it goes on an "always test" list.
 const MAX_CELLS_PER_ZONE := 512
 
-var zone_set: DotTimerZoneSet = null
+var zone_set: GSTimerZoneSet = null
 
 ## Cell key -> array of zone indices.
 var _cells: Dictionary = {}
 
 ## Zones too large to bucket, tested on every query.
-var _everywhere: Array[DotTimerZone] = []
+var _everywhere: Array[GSTimerZone] = []
 
 ## Point-kind zones, which are never "contained" and are indexed separately.
-var _points: Array[DotTimerZone] = []
+var _points: Array[GSTimerZone] = []
 
 
-static func of(set: DotTimerZoneSet) -> DotTimerZoneIndex:
-	var index := DotTimerZoneIndex.new()
+static func of(set: GSTimerZoneSet) -> GSTimerZoneIndex:
+	var index := GSTimerZoneIndex.new()
 	index.rebuild(set)
 	return index
 
 
-func rebuild(set: DotTimerZoneSet) -> void:
+func rebuild(set: GSTimerZoneSet) -> void:
 	zone_set = set
 	_cells.clear()
 	_everywhere.clear()
@@ -48,9 +48,9 @@ func rebuild(set: DotTimerZoneSet) -> void:
 			_points.append(zone)
 			continue
 
-		var low := _cell_of(zone.from if zone.shape == DotTimerZone.Shape.BOX
+		var low := _cell_of(zone.from if zone.shape == GSTimerZone.Shape.BOX
 			else zone.from - Vector3.ONE * zone.number)
-		var high := _cell_of(zone.to if zone.shape == DotTimerZone.Shape.BOX
+		var high := _cell_of(zone.to if zone.shape == GSTimerZone.Shape.BOX
 			else zone.from + Vector3.ONE * zone.number)
 
 		var span := (
@@ -86,7 +86,7 @@ static func _key(x: int, y: int, z: int) -> int:
 
 ## Every zone containing [param point], in the set's own order.
 ## The file's order, not the grid's, so overlapping zones resolve identically on client and server.
-func zones_at(point: Vector3, out: Array[DotTimerZone]) -> void:
+func zones_at(point: Vector3, out: Array[GSTimerZone]) -> void:
 	out.clear()
 
 	if zone_set == null:
@@ -97,7 +97,7 @@ func zones_at(point: Vector3, out: Array[DotTimerZone]) -> void:
 
 	if bucket is Array:
 		for zone in (bucket as Array):
-			if (zone as DotTimerZone).contains(point):
+			if (zone as GSTimerZone).contains(point):
 				out.append(zone)
 
 	for zone in _everywhere:
@@ -106,13 +106,13 @@ func zones_at(point: Vector3, out: Array[DotTimerZone]) -> void:
 
 	if out.size() > 1:
 		out.sort_custom(
-			func(a: DotTimerZone, b: DotTimerZone) -> bool: return a.id < b.id
+			func(a: GSTimerZone, b: GSTimerZone) -> bool: return a.id < b.id
 		)
 
 
 ## The first zone of a kind containing [param point], or null.
-func first_at(point: Vector3, kind: DotTimerZone.Kind) -> DotTimerZone:
-	var found: Array[DotTimerZone] = []
+func first_at(point: Vector3, kind: GSTimerZone.Kind) -> GSTimerZone:
+	var found: Array[GSTimerZone] = []
 	zones_at(point, found)
 
 	for zone in found:
@@ -123,9 +123,9 @@ func first_at(point: Vector3, kind: DotTimerZone.Kind) -> DotTimerZone:
 
 
 ## The spawn point for a track, or null.
-func spawn_for(track: int) -> DotTimerZone:
+func spawn_for(track: int) -> GSTimerZone:
 	for zone in _points:
-		if zone.kind == DotTimerZone.Kind.SPAWN and zone.track == track:
+		if zone.kind == GSTimerZone.Kind.SPAWN and zone.track == track:
 			return zone
 	return null
 

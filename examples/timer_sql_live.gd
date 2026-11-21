@@ -15,15 +15,15 @@ var _completed := 0
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 
-	var dialect := DotSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("DOT_SQL_DIALECT")))
+	var dialect := GSSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("DOT_SQL_DIALECT")))
 	var token_file := (OS.get_environment("GS_SQL_TOKEN_FILE") if OS.has_environment("GS_SQL_TOKEN_FILE") else OS.get_environment("DOT_SQL_TOKEN_FILE"))
 	if dialect < 0 or token_file == "":
 		print("set GS_SQL_URL, GS_SQL_DIALECT and GS_SQL_TOKEN_FILE; see dot-sql/tools/test_live.sh")
 		get_tree().quit(2)
 		return
-	print("dot-timer live: %s" % DotSqlDialect.name_of(dialect))
+	print("dot-timer live: %s" % GSSqlDialect.name_of(dialect))
 
 	var a := await _store("dot_tlive_")
 	await _drop(a)
@@ -58,15 +58,15 @@ func _ready() -> void:
 	get_tree().quit(1 if _failed > 0 or _passed + _failed != CHECKS or _entered != SECTIONS or _completed != _entered else 0)
 
 
-func _stale_server_section(a: DotTimerStoreSql) -> void:
+func _stale_server_section(a: GSTimerStoreSql) -> void:
 	var b := await _store("dot_tlive_")
 	await a.put(Contract.rec(&"zed", 40.0))
 	await b.best_for(Contract.M, 0, &"normal", &"zed")   # b caches zed at 40
 	await a.put(Contract.rec(&"zed", 30.0))               # a improves to 30
-	var late: DotResult = await b.put(Contract.rec(&"zed", 35.0))  # b files 35, believing 40
-	var truth: DotResult = await a.best_for(Contract.M, 0, &"normal", &"zed")
-	_check("a slower run filed by a stale server never overwrites a faster one", late.ok and truth.ok and truth.value is DotTimerRecord and is_equal_approx((truth.value as DotTimerRecord).time, 30.0))
-	var count_res: DotResult = await a.count_on(Contract.M, 0, &"normal")
+	var late: GSResult = await b.put(Contract.rec(&"zed", 35.0))  # b files 35, believing 40
+	var truth: GSResult = await a.best_for(Contract.M, 0, &"normal", &"zed")
+	_check("a slower run filed by a stale server never overwrites a faster one", late.ok and truth.ok and truth.value is GSTimerRecord and is_equal_approx((truth.value as GSTimerRecord).time, 30.0))
+	var count_res: GSResult = await a.count_on(Contract.M, 0, &"normal")
 	_check("and the board still has one row for the player", count_res.ok and int(count_res.value) == 1)
 
 
@@ -79,10 +79,10 @@ func _cache_section() -> void:
 	await c.top(Contract.M, 0, &"normal", 5)
 	_check("a board read twice is read from the database once", c.queries == before and c.cache_hits >= 2)
 	await c.put(Contract.rec(&"yan", 20.0))
-	var after_write: DotResult = await c.top(Contract.M, 0, &"normal", 1)
-	_check("this server's own write is on the board at once", after_write.ok and (after_write.value[0] as DotTimerRecord).player_id == &"yan")
+	var after_write: GSResult = await c.top(Contract.M, 0, &"normal", 1)
+	_check("this server's own write is on the board at once", after_write.ok and (after_write.value[0] as GSTimerRecord).player_id == &"yan")
 	var peeked: Variant = c.peek_top(Contract.M, 0, &"normal", 1)
-	_check("and a HUD can peek it without waiting", peeked is Array and ((peeked as Array)[0] as DotTimerRecord).player_id == &"yan")
+	_check("and a HUD can peek it without waiting", peeked is Array and ((peeked as Array)[0] as GSTimerRecord).player_id == &"yan")
 	var cold: Variant = c.peek_top(&"never_read", 0, &"normal", 1)
 	_check("a board nobody has read peeks as unknown, not as empty", cold == null)
 	await get_tree().create_timer(0.3).timeout
@@ -95,8 +95,8 @@ func _cache_section() -> void:
 	_check("with the cache off every read goes to the database", c.queries == q + 2)
 
 
-func _manager_section() -> DotTimerManager:
-	var manager := DotTimerManager.new()
+func _manager_section() -> GSTimerManager:
+	var manager := GSTimerManager.new()
 	manager.authoritative = true
 	manager.tick_rate = 128
 	manager.record_replays = false
@@ -106,13 +106,13 @@ func _manager_section() -> DotTimerManager:
 	await _drop(fresh)
 	manager.store = await _store("dot_tlivem_")
 	add_child(manager)
-	var styles := DotTimerStyle.defaults()
+	var styles := GSTimerStyle.defaults()
 	styles[0].minimum_time = 0.0
 	manager.set_styles(styles)
-	var set := DotTimerZoneSet.new()
+	var set := GSTimerZoneSet.new()
 	set.map_id = &"live_corridor"
-	set.add(DotTimerZone.make(DotTimerZone.Kind.START).set_box(Vector3(0, -2, -4), Vector3(4, 4, 4)))
-	set.add(DotTimerZone.make(DotTimerZone.Kind.END).set_box(Vector3(96, -2, -4), Vector3(100, 4, 4)))
+	set.add(GSTimerZone.make(GSTimerZone.Kind.START).set_box(Vector3(0, -2, -4), Vector3(4, 4, 4)))
+	set.add(GSTimerZone.make(GSTimerZone.Kind.END).set_box(Vector3(96, -2, -4), Vector3(100, 4, 4)))
 	manager.set_zones(set)
 	manager.add_player(&"p1", "Player One")
 	var filed: Array = []
@@ -126,32 +126,32 @@ func _manager_section() -> DotTimerManager:
 	while filed.is_empty() and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 	_check("a manager files through the SQL store", filed.size() == 1 and bool(filed[0]["world_record"]))
-	var rank: DotResult = await manager.store.player_rank(&"p1")
+	var rank: GSResult = await manager.store.player_rank(&"p1")
 	_check("and the player is ranked", rank.ok and int(rank.value["rank"]) == 1)
-	var profile: DotResult = await manager.profile(&"p1")
+	var profile: GSResult = await manager.profile(&"p1")
 	_check("and has a profile", profile.ok and int(profile.value["maps_done"]) == 1)
 	_check("and the map was catalogued", (await manager.store.map_info(&"live_corridor")).value != null)
 	return manager
 
 
-func _store(prefix: String) -> DotTimerStoreSql:
-	var dialect := DotSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("DOT_SQL_DIALECT")))
-	var made := DotSql.from_config({
+func _store(prefix: String) -> GSTimerStoreSql:
+	var dialect := GSSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("DOT_SQL_DIALECT")))
+	var made := GSSql.from_config({
 		"driver": "gateway",
 		"url": (OS.get_environment("GS_SQL_URL") if OS.has_environment("GS_SQL_URL") else OS.get_environment("DOT_SQL_URL")),
-		"dialect": DotSqlDialect.name_of(dialect),
+		"dialect": GSSqlDialect.name_of(dialect),
 		"token": FileAccess.get_file_as_string((OS.get_environment("GS_SQL_TOKEN_FILE") if OS.has_environment("GS_SQL_TOKEN_FILE") else OS.get_environment("DOT_SQL_TOKEN_FILE"))).strip_edges(),
 	}, self)
-	var store := DotTimerStoreSql.new(made.value)
+	var store := GSTimerStoreSql.new(made.value)
 	store.prefix = prefix
-	var opened: DotResult = await store.open()
+	var opened: GSResult = await store.open()
 	if not opened.ok:
 		print("could not open: %s (%s)" % [opened.error.message, opened.error.detail])
 		return null
 	return store
 
 
-func _drop(store: DotTimerStoreSql) -> void:
+func _drop(store: GSTimerStoreSql) -> void:
 	if store == null:
 		return
 	for name in ["records", "history", "players", "maps", "progress", "resume"]:

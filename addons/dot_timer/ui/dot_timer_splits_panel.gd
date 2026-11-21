@@ -1,5 +1,5 @@
 @tool
-class_name DotTimerSplitsPanel
+class_name GSTimerSplitsPanel
 extends Control
 
 ## A stage-splits sidebar for a staged map: one row per section, the delta against a comparison, the time, and a footer of sum of best and possible time save.
@@ -63,7 +63,7 @@ var comparison_name: String = "PB"
 var comparison_total: float = 0.0
 
 ## What is on screen. Written by [method show_run].
-var run: DotTimerRun = null
+var run: GSTimerRun = null
 
 # Per-section caches, index = section number (index 0 unused). Built in set_reference
 # so show_run does array reads and no dictionary lookups, and so the panel never holds the
@@ -135,7 +135,7 @@ func set_reference(
 
 	# Applies at once unless a run is under way or just finished; then the run keeps the
 	# reference it started with.
-	if run == null or run.status == DotTimerRun.Status.STOPPED or _snap_cmp.size() != _cmp.size():
+	if run == null or run.status == GSTimerRun.Status.STOPPED or _snap_cmp.size() != _cmp.size():
 		_take_snapshot()
 
 	_delta_text.resize(section_count + 1)
@@ -151,7 +151,7 @@ func set_reference(
 
 
 ## Puts the run on screen. Call once per frame; it redraws only when something shown moved.
-func show_run(p_run: DotTimerRun) -> void:
+func show_run(p_run: GSTimerRun) -> void:
 	run = p_run
 	_refresh(false)
 
@@ -280,15 +280,15 @@ func _refresh(force: bool) -> void:
 	if run != null:
 		stage = run.stage
 		status = int(run.status)
-		finished = run.status == DotTimerRun.Status.FINISHED
+		finished = run.status == GSTimerRun.Status.FINISHED
 	var run_id := run.get_instance_id() if run != null else 0
 
 	# A new run: another object, a stage count that went back, or a start from STOPPED or
 	# FINISHED (a host may restart one object). Pause to resume is the same run.
 	var fresh := run_id != _sig_run or stage < _sig_stage
 	if not fresh and run != null and run.is_running() and (
-		_sig_status == int(DotTimerRun.Status.STOPPED)
-		or _sig_status == int(DotTimerRun.Status.FINISHED)
+		_sig_status == int(GSTimerRun.Status.STOPPED)
+		or _sig_status == int(GSTimerRun.Status.FINISHED)
 	):
 		fresh = true
 	if fresh:
@@ -349,7 +349,7 @@ func _set_live_delta(k: int) -> void:
 
 func _update_live() -> void:
 	# The current row is unreached while the run is going (the finish row too).
-	if run != null and run.status != DotTimerRun.Status.FINISHED:
+	if run != null and run.status != GSTimerRun.Status.FINISHED:
 		_set_live_delta(_current)
 	if _seg_idx >= 0:
 		_footer_right[_seg_idx] = _segment_text()
@@ -446,12 +446,12 @@ func _add_footer(left: String, right: String, col: Color) -> void:
 func _fmt(seconds: float) -> String:
 	if is_nan(seconds) or seconds <= 0.0:
 		return "-"
-	return DotTimerRun.format_time(seconds)
+	return GSTimerRun.format_time(seconds)
 
 
 ## A signed delta with no leading "0:" under a minute: +1.234, not +0:01.234.
 func _delta(seconds: float) -> String:
-	var text := DotTimerRun.format_time(seconds, true)
+	var text := GSTimerRun.format_time(seconds, true)
 	if absf(seconds) < 60.0:
 		var rest := text.substr(3)
 		# Strip the tens digit only when it is a zero: "02.300" is 2.300, "12.300" is not.
@@ -559,7 +559,7 @@ func _draw_right(text: String, right: float, base: float, fs: int, col: Color) -
 	draw_string(_font, Vector2(right - w, base), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 
 
-## One StyleBoxFlat, so the translucent plate composites once (see DotTimerHud).
+## One StyleBoxFlat, so the translucent plate composites once (see GSTimerHud).
 func _draw_plate(rect: Rect2) -> void:
 	if _plate == null:
 		_plate = StyleBoxFlat.new()
