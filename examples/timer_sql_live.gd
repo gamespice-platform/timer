@@ -17,8 +17,8 @@ var _completed := 0
 func _ready() -> void:
 	GSLog.set_level(GSLog.Level.ERROR)
 
-	var dialect := GSSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("GS_SQL_DIALECT")))
-	var token_file := (OS.get_environment("GS_SQL_TOKEN_FILE") if OS.has_environment("GS_SQL_TOKEN_FILE") else OS.get_environment("GS_SQL_TOKEN_FILE"))
+	var dialect := GSSqlDialect.from_name(OS.get_environment("GS_SQL_DIALECT"))
+	var token_file := OS.get_environment("GS_SQL_TOKEN_FILE")
 	if dialect < 0 or token_file == "":
 		print("set GS_SQL_URL, GS_SQL_DIALECT and GS_SQL_TOKEN_FILE; see gs-sql/tools/test_live.sh")
 		get_tree().quit(2)
@@ -135,12 +135,12 @@ func _manager_section() -> GSTimerManager:
 
 
 func _store(prefix: String) -> GSTimerStoreSql:
-	var dialect := GSSqlDialect.from_name((OS.get_environment("GS_SQL_DIALECT") if OS.has_environment("GS_SQL_DIALECT") else OS.get_environment("GS_SQL_DIALECT")))
+	var dialect := GSSqlDialect.from_name(OS.get_environment("GS_SQL_DIALECT"))
 	var made := GSSql.from_config({
 		"driver": "gateway",
-		"url": (OS.get_environment("GS_SQL_URL") if OS.has_environment("GS_SQL_URL") else OS.get_environment("GS_SQL_URL")),
+		"url": OS.get_environment("GS_SQL_URL"),
 		"dialect": GSSqlDialect.name_of(dialect),
-		"token": FileAccess.get_file_as_string((OS.get_environment("GS_SQL_TOKEN_FILE") if OS.has_environment("GS_SQL_TOKEN_FILE") else OS.get_environment("GS_SQL_TOKEN_FILE"))).strip_edges(),
+		"token": FileAccess.get_file_as_string(OS.get_environment("GS_SQL_TOKEN_FILE")).strip_edges(),
 	}, self)
 	var store := GSTimerStoreSql.new(made.value)
 	store.prefix = prefix
