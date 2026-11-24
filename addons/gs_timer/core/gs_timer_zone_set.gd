@@ -292,10 +292,12 @@ func route_problems() -> PackedStringArray:
 
 ## Zones thin enough that a fast player can pass through one in a single tick. Advisory.
 ## [code]fastest_fall_speed[/code] judges the Y extent; zero means the same as [code]fastest_speed[/code]. See [method GSTimerZone.is_thin_for].
+## [code]hull_extent[/code] is the player's hull size in metres (zero, the default, ignores it): RESPAWN and TELEPORT zones fire on hull overlap, so they count as that much thicker. Every other kind is judged by its own size.
 func thin_zones(
 	fastest_speed: float,
 	tick_rate: int,
-	fastest_fall_speed: float = 0.0
+	fastest_fall_speed: float = 0.0,
+	hull_extent: float = 0.0
 ) -> Array[GSTimerZone]:
 	var ticks := maxf(float(tick_rate), 1.0)
 	var per_tick := fastest_speed / ticks
@@ -307,7 +309,7 @@ func thin_zones(
 	for zone in zones:
 		if zone.is_point_kind():
 			continue
-		if zone.is_thin_for(per_tick, fall_per_tick):
+		if zone.is_thin_for(per_tick, fall_per_tick, hull_extent):
 			out.append(zone)
 
 	return out

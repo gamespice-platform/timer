@@ -62,7 +62,7 @@ Short forms; the reasoning is in the linked file.
 
 - A zone is data, not a node. Zone ids are never reused. [zones](docs/zones.md#zones-are-data)
 - `problems()` is per zone, `route_problems()` per track (START, END, SPAWN, RESPAWN, stages); there is no track-agnostic respawn. `meta.pitless_tracks` exempts a route. [zones](docs/zones.md#checking-a-zone-file)
-- `thin_zones()` is judged per axis; the fall speed defaults to the run speed on purpose. [zones](docs/zones.md#checking-a-zone-file)
+- `thin_zones()` is judged per axis; the fall speed defaults to the run speed on purpose. `hull_extent` widens only RESPAWN/TELEPORT (hull-overlap kinds), default 0. [zones](docs/zones.md#checking-a-zone-file)
 - `fingerprint()` ignores comments and ids. [zones](docs/zones.md#checking-a-zone-file)
 - A stage zone without a `destination` sends the player to `Vector3.ZERO`, silently. A stage out of range is refused, never clamped; going to a stage stops the run. [zones](docs/zones.md#stages)
 - Saving a checkpoint is free, loading taints the attempt, and the taint is sticky. `GSTimerManager.allow_checkpoints` (does practice exist) is not `GSTimerStyle.allow_checkpoints` (may a practised run rank). [zones](docs/zones.md#practice-checkpoints)

@@ -194,16 +194,31 @@ func min_thickness() -> float:
 	return minf(s.x, minf(s.y, s.z))
 
 
+## Whether the host fires this kind on the player's HULL overlapping the volume rather than on a sampled point. Only these kinds are widened by a hull extent.
+func fires_on_hull_overlap() -> bool:
+	return kind == Kind.RESPAWN or kind == Kind.TELEPORT
+
+
 ## Whether a player moving this fast steps clean over the zone between two ticks. Both arguments are metres per tick.
 ## Per axis: the Y extent is judged against the fall speed, a different number on a jumping course.
-func is_thin_for(horizontal_per_tick: float, vertical_per_tick: float) -> bool:
+## [code]hull_extent[/code] (metres, default 0 = unchanged) is the player's hull size; it is added to the zone's thickness on every axis, but only for kinds that fire on hull overlap ([method fires_on_hull_overlap]).
+func is_thin_for(
+	horizontal_per_tick: float,
+	vertical_per_tick: float,
+	hull_extent: float = 0.0
+) -> bool:
+	var extra := maxf(hull_extent, 0.0) if fires_on_hull_overlap() else 0.0
+
 	if shape == Shape.SPHERE:
 		# Equally thin in every direction, so the fastest axis is the only one that
 		# decides it.
-		return number * 2.0 < maxf(horizontal_per_tick, vertical_per_tick)
+		return number * 2.0 + extra < maxf(horizontal_per_tick, vertical_per_tick)
 
 	var s := size()
-	return minf(s.x, s.z) < horizontal_per_tick or s.y < vertical_per_tick
+	return (
+		minf(s.x, s.z) + extra < horizontal_per_tick
+		or s.y + extra < vertical_per_tick
+	)
 
 
 func validate() -> GSResult:

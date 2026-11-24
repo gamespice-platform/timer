@@ -58,6 +58,10 @@ extends GSConfig
 ## Separate because a floor and a wall are not crossed at the same speed. Lower it only for a game that knows how far its players fall.
 @export_range(0.0, 500.0, 1.0) var fastest_expected_fall_speed: float = 0.0
 
+## Size of the player's collision hull in metres, for the thin-zone warning. Zero (default) ignores it.
+## RESPAWN and TELEPORT zones fire on hull overlap, so a thin pit the hull cannot step over is not warned about. Other kinds are unaffected.
+@export_range(0.0, 10.0, 0.01) var hull_extent: float = 0.0
+
 ## Whether practice checkpoints exist at all; the server's switch.
 ## What using one COSTS is the style's: [member GSTimerStyle.allow_checkpoints].
 @export var allow_checkpoints: bool = true

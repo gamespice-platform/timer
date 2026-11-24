@@ -1,13 +1,13 @@
-extends "selftest/zone_rule_checks.gd"
+extends "selftest/thin_zone_checks.gd"
 
 ## Proves the timer does what a leaderboard depends on; exits non-zero on any failure.
 ## Run: [code]godot --headless --path . res://examples/timer_selftest.tscn[/code]. The most important check is [method _test_tickrate_agreement]; the runs are synthetic, along a straight line.
 
-const CHECKS := 373
+const CHECKS := 377
 
 ## Sections entered against sections that ran to their last line, and against this. A runtime error aborts a section silently;
 ## a section that bailed out early is counted as not finished on purpose. The CHECKS total is the other half; see docs/testing.md.
-const SECTIONS := 37
+const SECTIONS := 38
 
 
 func _ready() -> void:
@@ -21,6 +21,7 @@ func _run() -> void:
 	_test_track_names()
 	_test_zone_geometry()
 	_test_zone_set_validation()
+	_test_thin_zone_hull()
 	_test_route_completeness()
 	_test_zone_set_round_trip()
 	_test_zone_index()
@@ -55,7 +56,6 @@ func _run() -> void:
 	_test_points()
 	_test_painter()
 	_test_time_formatting()
-
 	print("")
 	print("%d passed, %d failed" % [_passed, _failed])
 
