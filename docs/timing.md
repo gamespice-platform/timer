@@ -38,6 +38,7 @@ GSTimerRecord.tick_rate        ← so a disputed time can be checked afterwards
 - **`sv_tickrate` belongs in `server.cfg`, not `autoexec.cfg`.** It is `FLAG_STARTUP_ONLY`, and GameSpice Server execs `server.cfg` before the listener for exactly that reason while `autoexec.cfg` runs after and has it refused. `--sv-tickrate=128` and `+sv_tickrate 128` on the command line work too.
 - **`set_tick_rate` abandons runs in progress**, the only honest option: a run half-counted at 64 and half at 128 is neither, and files. Abandoning costs one attempt; the alternative costs the leaderboard its meaning.
 - **`tick_rate_matches_engine()` is checked at every map change and warns, but only on an authoritative timer.** A mirroring client counts at the rate the server told it (which is what makes a run comparable on a client rendering at 60), while its own `physics_ticks_per_second` is whatever its project exported; a browser build runs at 60. Warning there told every web client it would file wrong times, about a client that files none.
+- **Not while the server hibernates.** An empty GameSpice Server idles at a few Hz (`hibernate_tickrate`), so a map change then would warn that the engine disagrees. `manager.rate_guard.follow_hibernation(server, manager)` holds the check until the server wakes and runs it once then.
 
 ## The timer
 

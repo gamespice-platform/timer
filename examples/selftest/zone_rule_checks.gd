@@ -1,4 +1,4 @@
-extends "replay_checks.gd"
+extends "hibernation_checks.gd"
 
 ## The zone, checkpoint, rules, points and time-formatting sections of timer_selftest.gd,
 ## which extends this.

@@ -116,6 +116,9 @@ signal resume_available(player_id: StringName, state: Dictionary)
 @export var store_service: StringName = &""
 
 ## The map's zones.
+## The engine-rate check at every map change, held while the server hibernates: [method GSTimerEngineRateGuard.follow_hibernation].
+var rate_guard := GSTimerEngineRateGuard.new()
+
 var zones: GSTimerZoneSet = null
 
 ## Where records go. Null means runs are timed and nothing is filed.
@@ -401,15 +404,7 @@ func set_zones(set: GSTimerZoneSet) -> GSResult:
 				],
 			})
 
-	# Only where it is true: on an authoritative timer a rate that disagrees with the engine gives plausible wrong times, so say so at every map change.
-	# A MIRRORING timer counts at the rate the server told it by design, so the engine rate there is irrelevant and a warning would be false.
-	if authoritative and not tick_rate_matches_engine():
-		GSLog.warn(
-			CHANNEL,
-			"the timer's tick rate does not match the engine's physics rate; "
-			+ "every time this server files will be wrong by their ratio",
-			{"timer": tick_rate, "engine": Engine.physics_ticks_per_second}
-		)
+	rate_guard.check(self)
 
 	return GSResult.success(null)
 
