@@ -5,8 +5,8 @@ extends Node
 
 const Contract := preload("res://examples/timer_store_contract.gd")
 
-const CHECKS := 183
-const SECTIONS := 17
+const CHECKS := 188
+const SECTIONS := 18
 
 var _passed := 0
 var _failed := 0
@@ -26,6 +26,7 @@ func _run() -> void:
 	await _test_contract_memory()
 	await _test_contract_file()
 	await _test_file_store_survives_a_restart()
+	_test_file_store_writes_are_whole()
 	_test_points_formulas()
 	_test_titles()
 	_test_run_sections_and_snapshots()
@@ -100,6 +101,49 @@ func _test_file_store_survives_a_restart() -> void:
 	var nowhere := GSTimerStoreFile.at("")
 	nowhere.put_map({"map": "surf_contract", "tier": 3})
 	_check("a store with no directory refuses to write into the working directory", not nowhere.flush().ok and not FileAccess.file_exists("_maps.json"))
+	_done()
+
+
+
+## Four writers replacing one board while a reader parses it: a fixed shared `<path>.tmp` (before
+## gs-core API 49) had the second writer truncate the file the first was renaming, and the reader saw half a board.
+func _test_file_store_writes_are_whole() -> void:
+	_section("the file store's writes are whole to a reader while others write")
+	const WRITERS := 4
+	const ROUNDS := 30
+	var dir := _scratch("atomic")
+	var store := GSTimerStoreFile.at(dir)
+	var path := store.path_for(Contract.M, 0, &"normal")
+	var rows: Array = []
+	for i in 300:
+		rows.append({"player": "p%d" % i, "time": 30.0 + i})
+	var data := {"format": GSTimerRecord.FORMAT_VERSION, "records": rows}
+	_check("gs-core here is API 49 or later, so writes go through GSPaths", GSTimerStoreFile.core_writes_atomically())
+	_check("a first write lands", store._write_json(path, data).ok)
+
+	var failed := [0]
+	var writer := func(_i: int) -> void:
+		for _r in ROUNDS:
+			if not store._write_json(path, data).ok:
+				failed[0] += 1
+	var group := WorkerThreadPool.add_group_task(writer, WRITERS)
+	var reads := 0
+	var torn := 0
+	while not WorkerThreadPool.is_group_task_completed(group):
+		reads += 1
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if not (parsed is Dictionary) or ((parsed as Dictionary).get("records", []) as Array).size() != rows.size():
+			torn += 1
+	WorkerThreadPool.wait_for_group_task_completion(group)
+	_check("every one of %d writes succeeded (%d failed)" % [WRITERS * ROUNDS, failed[0]], failed[0] == 0)
+	_check("%d reads during the writes, none missing or torn (%d were)" % [reads, torn], reads > 0 and torn == 0)
+
+	# The pre-49 path still writes a whole file, for a build with an older gs-core.
+	var legacy := store._write_shared_tmp(path, JSON.stringify({"records": [1]}))
+	var tmps := Array(DirAccess.get_files_at(dir)).filter(func(f: String) -> bool: return f.ends_with(".tmp"))
+	_check("the fallback still writes, and no temporary is left beside the board", legacy.ok and tmps.is_empty()
+			and (JSON.parse_string(FileAccess.get_file_as_string(path)) as Dictionary).get("records") == [1.0])
+	_rm_rf(dir)
 	_done()
 
 

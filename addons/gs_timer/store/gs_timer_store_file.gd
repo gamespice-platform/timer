@@ -5,6 +5,8 @@ extends GSTimerStoreMemory
 ## Extends the memory store for the shared logic. Not for thousands of players: it reads and writes a whole board; use [GSTimerStoreSql].
 
 const FILE_CHANNEL := "timer.store.file"
+## gs-core's level whose GSPaths.write_bytes writes through a per-writer temporary.
+const ATOMIC_CORE_LEVEL := 49
 
 ## Where the boards live. Created on first write.
 var directory: String = "user://records"
@@ -568,6 +570,22 @@ func _write_json(path: String, data: Dictionary) -> GSResult:
 		if made != OK:
 			return GSResult.failure(GSError.from_engine(made, directory))
 
+	var text := JSON.stringify(data, "  ")
+	if core_writes_atomically():
+		var written := GSPaths.write_text(path, text)
+		return GSResult.success(null) if written.ok else written
+	return _write_shared_tmp(path, text)
+
+
+## Whether this build's GSPaths.write_bytes gives every writer its own temporary (gs-core API 49).
+## Two servers sharing a records directory, or two flushes at once, shared a fixed [code]<path>.tmp[/code]:
+## the second truncated it under the first's rename, and a reader got half a board.
+static func core_writes_atomically() -> bool:
+	return GSAddonApi.build_level("gs_core") >= ATOMIC_CORE_LEVEL
+
+
+## The write before gs-core API 49: a fixed temporary, so two writers at once can tear it.
+func _write_shared_tmp(path: String, text: String) -> GSResult:
 	var temporary := path + ".tmp"
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 
@@ -576,7 +594,7 @@ func _write_json(path: String, data: Dictionary) -> GSResult:
 			GSError.from_engine(FileAccess.get_open_error(), temporary)
 		)
 
-	file.store_string(JSON.stringify(data, "  "))
+	file.store_string(text)
 	file.close()
 
 	var renamed := DirAccess.rename_absolute(temporary, path)
