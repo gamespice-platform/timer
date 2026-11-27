@@ -1,0 +1,24 @@
+# Runtime scripts checked by gs-ci scripts/check-gd-perf.py (tools/gd_perf_lint.py).
+# One fnmatch glob per line over tracked paths. Baseline: ci/efficiency/gd-perf.tsv.
+addons/gs_timer/core/gs_timer_config.gd
+addons/gs_timer/core/gs_timer_rules.gd
+addons/gs_timer/core/gs_timer_run.gd
+addons/gs_timer/core/gs_timer_sample.gd
+addons/gs_timer/core/gs_timer_track.gd
+addons/gs_timer/core/gs_timer_zone.gd
+addons/gs_timer/core/gs_timer_zone_set.gd
+addons/gs_timer/net/gs_timer_net.gd
+addons/gs_timer/replay/gs_timer_replay.gd
+addons/gs_timer/replay/gs_timer_replay_player.gd
+addons/gs_timer/replay/gs_timer_replay_recorder.gd
+addons/gs_timer/runtime/gs_timer.gd
+addons/gs_timer/runtime/gs_timer_checkpoints.gd
+addons/gs_timer/runtime/gs_timer_engine_rate_guard.gd
+addons/gs_timer/runtime/gs_timer_manager.gd
+addons/gs_timer/runtime/gs_timer_zone_index.gd
+addons/gs_timer/ui/gs_timer_hud.gd
+addons/gs_timer/zones/gs_timer_zone_painter.gd
+addons/gs_timer/zones/gs_timer_zone_volume_2d.gd
+addons/gs_timer/zones/gs_timer_zone_volume_3d.gd
+# Per-run, per-record and settings paths: the timer has no per-tick work beyond the flush clock.
+cold+: ^(check|_refresh_totals|set_hibernating|_flush_store|from_dict|to_dict|from_dictionary|to_dictionary|describe|summary|load_from|save_to)$
