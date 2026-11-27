@@ -2,6 +2,8 @@
 
 Speedrun timers for Godot 4: bunny-hop, surf, KZ and anything else run against the clock. Zones a mapper draws, tracks and bonuses, stages and splits, styles, replays, records and leaderboards.
 
+This GameSpice addon is MIT licensed and built with Claude Code. Three headless scenes cover it: `timer_selftest.tscn`, `timer_2d_selftest.tscn` and `timer_records_selftest.tscn` in `examples/`. The run clock of Airdrift, one of the games in [Zee's Games](https://zeesgames.com), is this addon, on live servers. Bug reports go to the [issue tracker](https://github.com/gamespice-platform/timer/issues).
+
 Time is counted in ticks with sub-tick zone crossings, so a run set on a 64 Hz server is comparable with one set on a 128 Hz server. That lets two servers share a records table. It works in 2D as well as 3D.
 
 ## Install
@@ -93,8 +95,14 @@ Import the project once, then run `timer_selftest.tscn`, `timer_2d_selftest.tscn
 
 More in [docs/](docs/README.md): the design reasoning, what each refusal in `can_record` defends against, and [history](docs/history.md).
 
-## Status and licence
+## Used by
 
-Part of the [**GameSpice**](https://gamespice.net) platform: a family of Godot addons. Written with Claude Code and maintained by `gamemann`. Every addon has headless tests, but little of this has been played by real users yet, so expect rough edges and please [open an issue](https://github.com/gamespice-platform/timer/issues) when you hit one.
+These games from Zee's Games vendor this addon:
+
+- [Airdrift](https://zeesgames.com/airdrift) - the run clock: zones, tracks, runs and splits for bunny hop and surf maps
+
+The whole collection is at [zeesgames.com](https://zeesgames.com).
+
+## Licence
 
 MIT licence, see [LICENSE](LICENSE). The only closed part of the [**GameSpice**](https://gamespice.net) platform is the web back end; you can use your own instead of GameSpice's.
