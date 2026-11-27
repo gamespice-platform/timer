@@ -112,7 +112,8 @@ func zones_at(point: Vector3, out: Array[GSTimerZone]) -> void:
 
 ## The first zone of a kind containing [param point], or null.
 func first_at(point: Vector3, kind: GSTimerZone.Kind) -> GSTimerZone:
-	var found: Array[GSTimerZone] = []
+	var found := _first_at_found
+	found.clear()
 	zones_at(point, found)
 
 	for zone in found:
@@ -120,6 +121,10 @@ func first_at(point: Vector3, kind: GSTimerZone.Kind) -> GSTimerZone:
 			return zone
 
 	return null
+
+
+## Scratch for [method first_at], reused so a per-tick query allocates nothing.
+var _first_at_found: Array[GSTimerZone] = []
 
 
 ## The spawn point for a track, or null.

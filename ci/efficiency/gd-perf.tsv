@@ -46,10 +46,8 @@ addons/gs_timer/replay/gs_timer_replay.gd::describe::untyped_array	1
 addons/gs_timer/replay/gs_timer_replay.gd::from_bytes::string_build	2
 addons/gs_timer/replay/gs_timer_replay_player.gd::describe::untyped_array	1
 addons/gs_timer/replay/gs_timer_replay_recorder.gd::describe::untyped_array	1
-addons/gs_timer/runtime/gs_timer.gd::<members>::untyped_array	3
-addons/gs_timer/runtime/gs_timer.gd::_diff_membership::alloc	1
+addons/gs_timer/runtime/gs_timer.gd::<members>::untyped_array	1
 addons/gs_timer/runtime/gs_timer.gd::_diff_membership::emit_in_loop	2
-addons/gs_timer/runtime/gs_timer.gd::_rebuild_effects::alloc	1
 addons/gs_timer/runtime/gs_timer.gd::_rebuild_effects::emit_in_loop	1
 addons/gs_timer/runtime/gs_timer.gd::_request_effects::alloc	1
 addons/gs_timer/runtime/gs_timer.gd::_request_effects::emit_in_loop	1
@@ -132,7 +130,6 @@ addons/gs_timer/runtime/gs_timer_manager.gd::title_for::untyped_array	2
 addons/gs_timer/runtime/gs_timer_manager.gd::wipe_player::alloc	3
 addons/gs_timer/runtime/gs_timer_zone_index.gd::<members>::untyped_array	1
 addons/gs_timer/runtime/gs_timer_zone_index.gd::describe::untyped_array	1
-addons/gs_timer/runtime/gs_timer_zone_index.gd::first_at::alloc	1
 addons/gs_timer/runtime/gs_timer_zone_index.gd::rebuild::alloc	1
 addons/gs_timer/ui/gs_timer_hud.gd::<members>::untyped_array	3
 addons/gs_timer/ui/gs_timer_hud.gd::_draw::untyped_array	1

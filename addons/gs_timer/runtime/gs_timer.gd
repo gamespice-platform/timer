@@ -111,13 +111,18 @@ var pause_rules: bool = true
 var pause_max_speed: float = 0.5
 
 ## Zones the player was inside on the previous tick, by id.
-var _inside: Dictionary = {}
+var _inside: Dictionary[int, GSTimerZone] = {}
+## The other half of [member _inside]'s double buffer: refilled and swapped every tick, never handed out.
+var _inside_next: Dictionary[int, GSTimerZone] = {}
 
 ## Zones entered on this tick. Rebuilt every tick by [method _diff_membership].
 var _entered: Array[GSTimerZone] = []
 
 ## The "while inside" zones in force, by kind. Rebuilt only when the set changes.
-var _effects: Dictionary = {}
+var _effects: Dictionary[int, GSTimerZone] = {}
+## Scratch for [method _rebuild_effects]; copied into [member _effects] only when the set changes,
+## because [method active_effects] hands [member _effects] out.
+var _effects_next: Dictionary[int, GSTimerZone] = {}
 
 ## Reused per-tick scratch, so a tick allocates nothing.
 var _found: Array[GSTimerZone] = []
@@ -324,7 +329,8 @@ func _carry(sample: GSTimerSample) -> void:
 
 
 func _diff_membership(current: Array[GSTimerZone]) -> void:
-	var now := {}
+	var now := _inside_next
+	now.clear()
 
 	_entered.clear()
 
@@ -338,11 +344,13 @@ func _diff_membership(current: Array[GSTimerZone]) -> void:
 		if not now.has(id):
 			zone_exited.emit(_inside[id])
 
+	_inside_next = _inside
 	_inside = now
 
 
 func _rebuild_effects(current: Array[GSTimerZone]) -> void:
-	var next := {}
+	var next := _effects_next
+	next.clear()
 
 	for zone in current:
 		if zone.kind in EFFECT_KINDS:
@@ -350,17 +358,15 @@ func _rebuild_effects(current: Array[GSTimerZone]) -> void:
 			next[zone.kind] = zone
 
 	if next.size() != _effects.size():
-		_effects = next
+		_effects = next.duplicate()  # perf-lint: allow alloc only when the effect set changes
 		effects_changed.emit()
 		return
 
 	for kind in next:
 		if _effects.get(kind) != next[kind]:
-			_effects = next
+			_effects = next.duplicate()  # perf-lint: allow alloc only when the effect set changes
 			effects_changed.emit()
 			return
-
-	_effects = next
 
 
 ## The "while you are inside this" zones in force, by [enum GSTimerZone.Kind].
